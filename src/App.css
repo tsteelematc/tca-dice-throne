@@ -19,6 +19,7 @@
 
 [data-theme] .navbar {
     box-shadow: 0 14px 34px -22px color-mix(in srgb, var(--color-neutral) 70%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
 
 [data-theme] .card {
@@ -30,41 +31,41 @@
 }
 
 [data-theme="light"] {
-    --color-base-100: #f8f4ff;
-    --color-base-200: #ece2fb;
-    --color-base-300: #d8c5f0;
-    --color-base-content: #241b36;
-    --color-primary: #6b21a8;
-    --color-primary-content: #fdf4ff;
-    --color-secondary: #b7862f;
-    --color-secondary-content: #2b1d05;
-    --color-accent: #d4af37;
-    --color-accent-content: #241b0a;
-    --color-neutral: #241b36;
-    --color-neutral-content: #f3ecff;
-    background-image: linear-gradient(155deg, #fbf7ff 0%, #efe4fb 42%, #ddc9f2 100%);
+    --color-base-100: #f6f5f3;
+    --color-base-200: #e9e7e4;
+    --color-base-300: #d7d3ce;
+    --color-base-content: #1a1714;
+    --color-primary: #d9530f;
+    --color-primary-content: #fff5ec;
+    --color-secondary: #a8410c;
+    --color-secondary-content: #fff5ec;
+    --color-accent: #f2792c;
+    --color-accent-content: #1a0d02;
+    --color-neutral: #1a1714;
+    --color-neutral-content: #f6f5f3;
+    background-image: linear-gradient(155deg, #fafaf9 0%, #f0eeeb 45%, #e6e2dd 100%);
 }
 
 [data-theme="dark"] {
-    --color-base-100: #120b1e;
-    --color-base-200: #1a1129;
-    --color-base-300: #281b3d;
-    --color-base-content: #ece3fb;
-    --color-primary: #d4af37;
-    --color-primary-content: #241505;
-    --color-secondary: #9b4fc7;
-    --color-secondary-content: #f7e9fb;
-    --color-accent: #5f9fa8;
-    --color-accent-content: #0a1f22;
-    --color-neutral: #0a0713;
-    --color-neutral-content: #efe7db;
-    background-image: linear-gradient(155deg, #0a0713 0%, #17102a 44%, #2d1a44 100%);
+    --color-base-100: #0b0b0a;
+    --color-base-200: #131211;
+    --color-base-300: #1d1b18;
+    --color-base-content: #ece8e2;
+    --color-primary: #f2792c;
+    --color-primary-content: #170a02;
+    --color-secondary: #c4590f;
+    --color-secondary-content: #170a02;
+    --color-accent: #ffa057;
+    --color-accent-content: #1a0d02;
+    --color-neutral: #000000;
+    --color-neutral-content: #ece8e2;
+    background-image: linear-gradient(155deg, #000000 0%, #0c0b0a 45%, #171310 100%);
 }
 
 [data-theme="light"] .navbar {
-    background-image: linear-gradient(90deg, #3d1f5c 0%, #7a5a1f 100%);
+    background-image: linear-gradient(90deg, #17140f 0%, #4a2812 100%);
 }
 
 [data-theme="dark"] .navbar {
-    background-image: linear-gradient(90deg, #0a0713 0%, #3d1f5c 100%);
+    background-image: linear-gradient(90deg, #000000 0%, #2e1a0a 100%);
 }
