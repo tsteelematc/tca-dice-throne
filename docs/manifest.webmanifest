@@ -1,0 +1,34 @@
+{
+  "name": "My Dice Throne Life",
+  "short_name": "My DT Life",
+  "description": "Log your Dice Throne battles and track player & hero stats.",
+  "start_url": "/tca-dice-throne/",
+  "scope": "/tca-dice-throne/",
+  "display": "standalone",
+  "background_color": "#f6f5f3",
+  "theme_color": "#d9530f",
+  "icons": [
+    {
+      "src": "pwa-64x64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "maskable-icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
