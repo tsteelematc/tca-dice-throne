@@ -10,7 +10,8 @@ import { Play } from './Play';
 import { 
   getGeneralFacts, 
   getHeroLeaderboard,
-  getLeaderboard, 
+  getLeaderboard,
+  getPlayerHeroLeaderboard,
   getPlayerHeroMatrix,
   getPreviousHeroes,
   getPreviousPlayers, 
@@ -542,6 +543,9 @@ const App = () => {
                   }
                   heroLeaderboard={
                     getHeroLeaderboard(gameResults)
+                  }
+                  playerHeroLeaderboard={
+                    getPlayerHeroLeaderboard(gameResults)
                   }
                   playerHeroMatrix={
                     getPlayerHeroMatrix(gameResults)

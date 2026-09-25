@@ -173,6 +173,54 @@ export type PlayerHeroMatrix = {
     maxGames: number;
 };
 
+export const getPlayerHeroLeaderboard = (
+    games: GameResult[]
+): LeaderboardEntry[] => {
+    const combos = games
+        .flatMap(x => x.players)
+        .map(x => ({ name: x.name, hero: x.hero }))
+        .filter(
+            (x, i, a) => i == a.findIndex(
+                y => y.name == x.name && y.hero == x.hero
+            )
+        )
+    ;
+
+    return combos
+        .map(
+            ({ name, hero }) => {
+                const matching = games.filter(
+                    g => g.players.some(
+                        p => p.name === name && p.hero === hero
+                    )
+                );
+                const wins = matching.filter(
+                    g => g.winner === name
+                ).length;
+                const totalGames = matching.length;
+                const avg = totalGames > 0
+                    ? wins / totalGames
+                    : 0
+                ;
+
+                return {
+                    wins,
+                    losses: totalGames - wins,
+                    avg: `${avg.toFixed(3)}`,
+                    name: `${name} (${hero})`,
+                };
+            }
+        )
+        .sort(
+            (a, b) => a.avg == b.avg
+                ? a.wins == 0 && b.wins == 0
+                    ? (a.wins + a.losses) - (b.wins + b.losses)
+                    : (b.wins + b.losses) - (a.wins + a.losses)
+                : Number.parseFloat(b.avg) - Number.parseFloat(a.avg)
+        )
+    ;
+};
+
 export const getPlayerHeroMatrix = (games: GameResult[]): PlayerHeroMatrix => {
     const allPlayers = getPreviousPlayers(games);
     const allHeroes = getPreviousHeroes(games);
