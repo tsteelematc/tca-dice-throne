@@ -312,18 +312,28 @@ export const Home: React.FC<HomeProps> = ({
                                     {selectedCell.hero}
                                 </span>
                             </p>
-                            <div className="grid grid-cols-3 gap-2">
-                                <div className="bg-base-200 rounded-xl p-3 text-center">
-                                    <div className="text-xs opacity-60 mb-1">Games</div>
-                                    <div className="text-2xl font-bold">{selectedCell.games}</div>
-                                </div>
+                            <div className="grid grid-cols-4 gap-2">
                                 <div className="bg-base-200 rounded-xl p-3 text-center">
                                     <div className="text-xs opacity-60 mb-1">Wins</div>
-                                    <div className="text-2xl font-bold text-primary">{selectedCell.wins}</div>
+                                    <div className="text-lg font-bold text-primary">{selectedCell.wins}</div>
                                 </div>
                                 <div className="bg-base-200 rounded-xl p-3 text-center">
                                     <div className="text-xs opacity-60 mb-1">Losses</div>
-                                    <div className="text-2xl font-bold">{selectedCell.losses}</div>
+                                    <div className="text-lg font-bold">{selectedCell.losses}</div>
+                                </div>
+                                <div className="bg-base-200 rounded-xl p-3 text-center">
+                                    <div className="text-xs opacity-60 mb-1">Games</div>
+                                    <div className="text-lg font-bold">{selectedCell.games}</div>
+                                </div>
+                                <div className="bg-base-200 rounded-xl p-3 text-center">
+                                    <div className="text-xs opacity-60 mb-1">Win %</div>
+                                    <div className="text-lg font-bold">
+                                        {
+                                            selectedCell.games > 0
+                                                ? `${(100 * selectedCell.wins / selectedCell.games).toFixed(1)}%`
+                                                : "0.0%"
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         </>
