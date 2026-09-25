@@ -83,14 +83,6 @@ export const Home: React.FC<HomeProps> = ({
                                 <td>Total Games</td>
                                 <th>{generalFacts.totalGames}</th>
                             </tr>
-                            <tr>
-                                <td>Shortest Game</td>
-                                <th>{generalFacts.shortestGame}</th>
-                            </tr>
-                            <tr>
-                                <td>Longest Game</td>
-                                <th>{generalFacts.longestGame}</th>
-                            </tr>
                         </tbody>
                     </table>
                 </div>
