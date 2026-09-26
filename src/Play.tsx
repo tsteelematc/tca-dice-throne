@@ -142,6 +142,14 @@ export const Play: React.FC<PlayProps> = ({
                                 )
                             )
                         }
+                        <button 
+                            className="btn btn-lg btn-link w-full lg:w-64"
+                            onClick={
+                                () => nav(-2)
+                            }
+                        >
+                            Quit
+                        </button>
                     </div>
                 </div>
             </div>
