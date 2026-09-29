@@ -1,5 +1,8 @@
 import { useNavigate } from "react-router";
+import { QRCodeSVG } from "qrcode.react";
 import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell } from "./GameResults";
+import { gameResultFromQrPayload, gameResultToQrPayload } from "./GameResults";
+import { decodeQrFromVideo, startCameraScan, stopVideoStream } from "./qr";
 import { useEffect, useRef, useState } from "react";
 
 export const APP_TITLE = "My DT Life";
@@ -11,6 +14,7 @@ type HomeProps = {
     playerHeroLeaderboard: LeaderboardEntry[],
     playerHeroMatrix: PlayerHeroMatrix,
     allGames: GameResult[],
+    importGameResult: (g: GameResult) => void,
     setTitle: (t: string) => void,
 };
 
@@ -22,6 +26,7 @@ export const Home: React.FC<HomeProps> = ({
     playerHeroLeaderboard,
     playerHeroMatrix,
     allGames,
+    importGameResult,
     setTitle,
 }) => {
     
@@ -38,6 +43,78 @@ export const Home: React.FC<HomeProps> = ({
     const openHeatmapCell = (cell: PlayerHeroCell) => {
         setSelectedCell(cell);
         heatmapModalRef.current?.showModal();
+    };
+
+    //
+    // QR share + scan state...
+    //
+    const [shareGame, setShareGame] = useState<GameResult | null>(null);
+    const shareModalRef = useRef<HTMLDialogElement>(null);
+    const scanModalRef = useRef<HTMLDialogElement>(null);
+    const scanVideoRef = useRef<HTMLVideoElement>(null);
+    const [scanStatus, setScanStatus] = useState("");
+    const [scanStream, setScanStream] = useState<MediaStream | null>(null);
+    const [scanPaste, setScanPaste] = useState("");
+
+    const openShareModal = (game: GameResult) => {
+        setShareGame(game);
+        shareModalRef.current?.showModal();
+    };
+
+    const openScanModal = () => {
+        setScanStatus("");
+        setScanPaste("");
+        scanModalRef.current?.showModal();
+    };
+
+    const closeScanModal = () => {
+        stopVideoStream(scanStream);
+        setScanStream(null);
+        scanModalRef.current?.close();
+    };
+
+    const startScan = async () => {
+        const video = scanVideoRef.current;
+        if (!video) return;
+        setScanStatus("Requesting camera access...");
+        const stream = await startCameraScan(video);
+        if (!stream) {
+            setScanStatus("Camera unavailable — paste the QR text below instead.");
+            return;
+        }
+        setScanStream(stream);
+        setScanStatus("Point the camera at a QR code...");
+    };
+
+    const stopScan = () => {
+        stopVideoStream(scanStream);
+        setScanStream(null);
+        setScanStatus("");
+    };
+
+    const tryDecode = () => {
+        const video = scanVideoRef.current;
+        if (!video) return;
+        const text = decodeQrFromVideo(video);
+        if (text) {
+            handleImportPayload(text);
+        }
+    };
+
+    const handleImportPayload = (payload: string) => {
+        const game = gameResultFromQrPayload(payload);
+        if (!game) {
+            setScanStatus("Could not read a valid game from that QR code.");
+            return;
+        }
+        importGameResult(game);
+        stopScan();
+        scanModalRef.current?.close();
+    };
+
+    const handlePasteImport = () => {
+        if (scanPaste.trim().length === 0) return;
+        handleImportPayload(scanPaste.trim());
     };
 
     // Then return JSX...
@@ -305,11 +382,22 @@ export const Home: React.FC<HomeProps> = ({
 
             <div className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                 <div className="card-body p-2">
-                    <h2
-                        className="card-title text-nowrap ml-3"
-                    >
-                        All Games
-                    </h2>
+                    <div className="flex items-center gap-2">
+                        <h2
+                            className="card-title text-nowrap ml-3"
+                        >
+                            All Games
+                        </h2>
+                        <button
+                            className="btn btn-ghost btn-sm btn-circle"
+                            title="Scan a QR code to import a game"
+                            onClick={openScanModal}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h18v18H3zM7 7h10v10H7z" />
+                            </svg>
+                        </button>
+                    </div>
                     {
                         allGames.length === 0
                             ? <p className="ml-3">N/A</p>
@@ -334,7 +422,18 @@ export const Home: React.FC<HomeProps> = ({
                                                     );
                                                     return (
                                                         <tr key={x.end}>
-                                                            <td>{ new Date(x.end).toLocaleDateString() }</td>
+                                                            <td className="text-nowrap">
+                                                                { new Date(x.end).toLocaleDateString() }
+                                                                <button
+                                                                    className="btn btn-ghost btn-xs btn-circle ml-1"
+                                                                    title="Share this game as a QR code"
+                                                                    onClick={() => openShareModal(x)}
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h18v18H3zM7 7h10v10H7z" />
+                                                                    </svg>
+                                                                </button>
+                                                            </td>
                                                             <th>
                                                                 { x.winner }
                                                                 { winner && (
@@ -369,6 +468,103 @@ export const Home: React.FC<HomeProps> = ({
                     }
                 </div>
             </div>
+
+            <dialog ref={shareModalRef} className="modal">
+                <div className="modal-box">
+                    {shareGame && (
+                        <>
+                            <h3 className="font-bold text-xl mb-1">Share Game</h3>
+                            <p className="opacity-60 mb-4 text-sm">
+                                { shareGame.winner } won on{' '}
+                                <span className="font-semibold opacity-100 text-base-content">
+                                    { new Date(shareGame.end).toLocaleDateString() }
+                                </span>
+                            </p>
+                            <div className="flex justify-center my-4">
+                                <QRCodeSVG
+                                    value={gameResultToQrPayload(shareGame)}
+                                    size={220}
+                                    level="M"
+                                />
+                            </div>
+                            <p className="opacity-60 text-sm text-center">
+                                Scan this code with another device to import this game.
+                            </p>
+                        </>
+                    )}
+                    <div className="modal-action">
+                        <form method="dialog">
+                            <button className="btn btn-primary">Close</button>
+                        </form>
+                    </div>
+                </div>
+                <form method="dialog" className="modal-backdrop">
+                    <button>close</button>
+                </form>
+            </dialog>
+
+            <dialog ref={scanModalRef} className="modal">
+                <div className="modal-box">
+                    <h3 className="font-bold text-xl mb-1">Import Game</h3>
+                    <p className="opacity-60 mb-4 text-sm">
+                        Scan a QR code from another device, or paste its text below.
+                    </p>
+                    <div className="flex flex-col gap-3">
+                        <video
+                            ref={scanVideoRef}
+                            className="w-full rounded-xl bg-base-200"
+                            playsInline
+                            muted
+                        />
+                        <div className="flex gap-2">
+                            <button
+                                className="btn btn-primary"
+                                onClick={startScan}
+                            >
+                                Start Camera
+                            </button>
+                            <button
+                                className="btn btn-ghost"
+                                onClick={tryDecode}
+                            >
+                                Capture
+                            </button>
+                            <button
+                                className="btn btn-ghost"
+                                onClick={stopScan}
+                            >
+                                Stop
+                            </button>
+                        </div>
+                        <textarea
+                            className="textarea w-full"
+                            placeholder="...or paste the QR text here"
+                            value={scanPaste}
+                            onChange={e => setScanPaste(e.target.value)}
+                        />
+                        <button
+                            className="btn btn-primary"
+                            onClick={handlePasteImport}
+                        >
+                            Import Pasted Game
+                        </button>
+                        { scanStatus.length > 0 && (
+                            <p className="opacity-80 text-sm">{scanStatus}</p>
+                        ) }
+                    </div>
+                    <div className="modal-action">
+                        <button
+                            className="btn btn-ghost"
+                            onClick={closeScanModal}
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+                <form method="dialog" className="modal-backdrop">
+                    <button>close</button>
+                </form>
+            </dialog>
 
             <dialog ref={heatmapModalRef} className="modal">
                 <div className="modal-box">

@@ -86,6 +86,32 @@ export const getAllGamesSorted = (
     (a, b) => Date.parse(b.end) - Date.parse(a.end)
 );
 
+//
+// QR share/import helpers...
+//
+export const gameResultToQrPayload = (
+    game: GameResult
+): string => JSON.stringify(game);
+
+export const gameResultFromQrPayload = (
+    payload: string
+): GameResult | null => {
+    try {
+        const parsed = JSON.parse(payload);
+        if (
+            typeof parsed?.winner === "string"
+            && Array.isArray(parsed?.players)
+            && typeof parsed?.start === "string"
+            && typeof parsed?.end === "string"
+        ) {
+            return parsed as GameResult;
+        }
+        return null;
+    } catch {
+        return null;
+    }
+};
+
 export const getLeaderboard = (
     games: GameResult[]
 ): LeaderboardEntry[] => getPreviousPlayers(games)

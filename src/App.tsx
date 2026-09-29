@@ -447,6 +447,29 @@ const App = () => {
   }
 
   //
+  // Import a game result (e.g. from a scanned QR code)...
+  //
+  const importGameResult = async (gameResult: GameResult) => {
+    // Save to the cloud if an email is configured...
+    if (emailForCoudApi.length > 0) {
+      await saveGameToCloud(
+        emailForCoudApi,
+        "tca-dice-throne-26s",
+        gameResult.end,
+        gameResult,
+      );
+    }
+
+    // Optimistically update local state...
+    setGameResults(
+      [
+        ...gameResults,
+        gameResult,
+      ]
+    );
+  }
+
+  //
   // Return JSX...
   //
   return (
@@ -554,6 +577,7 @@ const App = () => {
                   allGames={
                     getAllGamesSorted(gameResults)
                   }
+                  importGameResult={importGameResult}
                 />
               }
             />
