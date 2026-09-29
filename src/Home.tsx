@@ -511,7 +511,7 @@ export const Home: React.FC<HomeProps> = ({
                 <div className="modal-box">
                     <h3 className="font-bold text-xl mb-1">Import Game</h3>
                     <p className="opacity-60 mb-4 text-sm">
-                        Scan a QR code from another device, or paste its text below.
+                        Scan a QR code from another device...
                     </p>
                     <div className="flex flex-col gap-3">
                         <video
