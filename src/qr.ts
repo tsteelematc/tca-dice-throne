@@ -61,5 +61,5 @@ export const decodeQrFromVideo = (
         width,
         height,
     );
-    return code?.text ?? null;
+    return (code as any)?.text ?? null;
 };
