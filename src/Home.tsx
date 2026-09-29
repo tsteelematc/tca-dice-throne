@@ -54,7 +54,7 @@ export const Home: React.FC<HomeProps> = ({
     const scanVideoRef = useRef<HTMLVideoElement>(null);
     const [scanStatus, setScanStatus] = useState("");
     const [scanStream, setScanStream] = useState<MediaStream | null>(null);
-    const [scanPaste, setScanPaste] = useState("");
+    // const [scanPaste, setScanPaste] = useState("");
     const [scanning, setScanning] = useState(false);
     const scanStopRef = useRef<(() => void) | null>(null);
 
@@ -65,7 +65,7 @@ export const Home: React.FC<HomeProps> = ({
 
     const openScanModal = () => {
         setScanStatus("");
-        setScanPaste("");
+        // setScanPaste("");
         scanModalRef.current?.showModal();
     };
 
@@ -113,10 +113,10 @@ export const Home: React.FC<HomeProps> = ({
         scanModalRef.current?.close();
     };
 
-    const handlePasteImport = () => {
-        if (scanPaste.trim().length === 0) return;
-        handleImportPayload(scanPaste.trim());
-    };
+    // const handlePasteImport = () => {
+    //     if (scanPaste.trim().length === 0) return;
+    //     handleImportPayload(scanPaste.trim());
+    // };
 
     // Then return JSX...
     return (

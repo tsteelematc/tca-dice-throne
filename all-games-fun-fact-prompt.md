@@ -211,3 +211,23 @@
 ## Prompt 36 — Update this file
 
 > update my prompt md
+
+## Prompt 37 — Build error: unused handlePasteImport
+
+> ooh, build error below, and update prompt
+>
+> src/Home.tsx:116:11 - error TS6133: 'handlePasteImport' is declared but its value is never read.
+>
+> 116     const handlePasteImport = () => {
+>               ~~~~~~~~~~~~~~~~~
+
+*(Commented out the now-unused `handlePasteImport` handler in `Home.tsx` to clear the TS6133 build error.)*
+
+## Prompt 38 — Build error: unused scanPaste
+
+> src/Home.tsx:57:12 - error TS6133: 'scanPaste' is declared but its value is never read.
+>
+> 57     const [scanPaste, setScanPaste] = useState("");
+>               ~~~~~~~~~ and update prompt
+
+*(Commented out the now-unused `scanPaste` state and its `setScanPaste("")` call in `openScanModal` to clear the TS6133 build error.)*
