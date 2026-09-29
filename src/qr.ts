@@ -24,9 +24,11 @@ export const startCameraScan = async (
         return null;
     }
     try {
-        // Request a higher resolution so dense QR codes have more pixels.
+        // Request the rear (environment-facing) camera when available,
+        // and a higher resolution so dense QR codes have more pixels.
         const stream = await navigator.mediaDevices.getUserMedia({
             video: {
+                facingMode: "environment",
                 width: { ideal: 1280 },
                 height: { ideal: 720 },
             },

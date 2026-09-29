@@ -185,3 +185,13 @@
 ## Prompt 31 — Update this file, switching back to Deepseek
 
 > update my prompt md file with latest prompts, probably going to go back to cheaper deepseek, but thanks
+
+## Prompt 32 — Default to back camera
+
+> oh, on s25 and surface pro using front cam, can we easily default to back cams?
+
+*(Added `facingMode: "environment"` to the `getUserMedia` video constraints in `qr.ts` to prefer the rear camera.)*
+
+## Prompt 33 — Update this file
+
+> update md prompt history too
