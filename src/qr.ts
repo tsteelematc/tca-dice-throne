@@ -31,10 +31,8 @@ export const startCameraScan = async (
                 height: { ideal: 720 },
             },
         });
-        console.log("[qr] got stream", stream);
         video.srcObject = stream;
         await video.play();
-        console.log("[qr] video playing, dims:", video.videoWidth, video.videoHeight);
         return stream;
     } catch (e) {
         console.error("[qr] getUserMedia error", e);
@@ -44,7 +42,8 @@ export const startCameraScan = async (
 
 //
 // Decode a QR code from raw RGBA pixel data.
-// jsQR expects RGBA data of exactly width*height*4 bytes.
+// jsQR expects RGBA data of exactly width*height*4 bytes, and
+// returns the decoded string on the `data` property.
 //
 const decodeQrFromPixels = (
     data: Uint8ClampedArray,
@@ -60,20 +59,22 @@ const decodeQrFromPixels = (
         data,
         width,
         height,
+        { inversionAttempts: "attemptBoth" },
     );
-    return (code as any)?.text ?? null;
+    return code?.data ?? null;
 };
 
 //
 // Draw the current video frame to a canvas and try to decode a QR.
-// jsQR expects raw RGBA data, so we pass getImageData's output
-// directly. Tries multiple scales since jsQR can be size-sensitive.
+// Tries the native resolution first, then a downscaled version,
+// since jsQR can be sensitive to very large or very small images.
 //
-const decodeFrame = (
+export const captureAndDecodeQr = (
     video: HTMLVideoElement,
-    width: number,
-    height: number,
+    stream: MediaStream | null,
 ): string | null => {
+    const { width, height } = getVideoDimensions(video, stream);
+
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
@@ -83,11 +84,6 @@ const decodeFrame = (
     }
     ctx.drawImage(video, 0, 0, width, height);
     const imageData = ctx.getImageData(0, 0, width, height);
-
-    // Diagnostic: confirm the decode loop is running and data shape.
-    console.log(
-        `[qr] decode attempt ${width}x${height}, dataLen=${imageData.data.length}, expected=${width * height * 4}`
-    );
 
     // Try native resolution.
     const text = decodeQrFromPixels(imageData.data, width, height);
@@ -134,52 +130,4 @@ const getVideoDimensions = (
         return { width: settings.width, height: settings.height };
     }
     return { width: 640, height: 480 };
-};
-
-//
-// Continuously scan the video feed for a QR code by drawing the
-// <video> element to a canvas and decoding with jsQR. Calls
-// onDetect as soon as a QR is found. Returns a stop function.
-//
-export const scanForQr = (
-    video: HTMLVideoElement,
-    stream: MediaStream | null,
-    onDetect: (text: string) => void,
-    onStatus?: (status: string) => void,
-): () => void => {
-    let stopped = false;
-    let lastDecode = 0;
-    let statusReported = false;
-
-    const report = (msg: string) => {
-        if (!statusReported) {
-            statusReported = true;
-            onStatus?.(msg);
-        }
-    };
-
-    const tick = () => {
-        if (stopped) return;
-
-        const now = Date.now();
-        if (now - lastDecode >= 200) {
-            lastDecode = now;
-
-            const { width, height } = getVideoDimensions(video, stream);
-            const text = decodeFrame(video, width, height);
-            if (text) {
-                onDetect(text);
-                return;
-            }
-            report(`Scanning at ${width}x${height} — hold the QR code steady...`);
-        }
-
-        requestAnimationFrame(tick);
-    };
-
-    requestAnimationFrame(tick);
-
-    return () => {
-        stopped = true;
-    };
 };
