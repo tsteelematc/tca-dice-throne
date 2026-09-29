@@ -24,15 +24,10 @@ export const startCameraScan = async (
         return null;
     }
     try {
-        // Request the rear (environment-facing) camera when available,
-        // and a higher resolution so dense QR codes have more pixels.
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: "environment",
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-            },
-        });
+        // Prefer the rear (environment-facing) camera when available.
+        // facingMode is only a hint, so also try to pick the rear
+        // device explicitly by label when the browser exposes it.
+        const stream = await getUserMediaPreferringRearCamera();
         video.srcObject = stream;
         await video.play();
         return stream;
@@ -40,6 +35,44 @@ export const startCameraScan = async (
         console.error("[qr] getUserMedia error", e);
         return null;
     }
+};
+
+//
+// Request the rear camera when possible, falling back to the
+// default camera otherwise.
+//
+const getUserMediaPreferringRearCamera = async (): Promise<MediaStream> => {
+    const constraints = {
+        video: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+        },
+    };
+
+    // If the browser can enumerate devices, look for a rear camera
+    // by label and request it explicitly.
+    if (navigator.mediaDevices?.enumerateDevices) {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const rear = devices.find(
+                d => /back|rear|environment|world/i.test(d.label ?? "")
+            );
+            if (rear) {
+                return await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        deviceId: { exact: rear.deviceId },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                    },
+                });
+            }
+        } catch (e) {
+            console.warn("[qr] rear camera enumeration failed, using default", e);
+        }
+    }
+
+    return navigator.mediaDevices.getUserMedia(constraints);
 };
 
 //
