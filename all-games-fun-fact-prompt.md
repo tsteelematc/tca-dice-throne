@@ -139,3 +139,49 @@
 ## Prompt 24 — Update this file
 
 > update my md file with prompts so i can commit and push to my device
+
+## Prompt 25 — Ask Sonnet to look at QR stuff
+
+> alright, can sonnet look at qr stuff and try a fix, i presume you can see prompt history, if not in this session, than the md file
+
+## Prompt 26 — Deepseek logs, still not recognizing
+
+> some deepseek debug logs, but still didn't recognize qr
+>
+> [qr] got stream MediaStream
+> qr.ts:37 [qr] video playing, dims: 1280 720
+> 93qr.ts:89 [qr] decode attempt 1280x720, dataLen=3686400, expected=3686400
+
+## Prompt 27 — UI degraded feedback
+
+> what, this seems off to me, i chose a qr pic, did nothing, and who wants that version any how, i could see a capture button, versus vid stream, but this ui has degraded now
+
+## Prompt 28 — Cleaner approach but still not working
+
+> i like the approach, cleaner, but no worky, maybe add some console logs so i can paste and you can debug
+
+## Prompt 29 — Capture logs showing FOUND but returning null
+
+> [qr] got stream MediaStream {id: '7ef1b959-0f8f-4f5e-8c60-ef5b9aa8f5c9', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+> qr.ts:37 [qr] video playing, dims: 1280 720
+> Home.tsx:113 [scan] capturePhoto clicked. video = <video class="w-full rounded-xl bg-base-200" playsinline style="width: 100%; aspect-ratio: 4 / 3;"></video>media scanStream = MediaStream {id: '7ef1b959-0f8f-4f5e-8c60-ef5b9aa8f5c9', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+> qr.ts:82 [qr] captureAndDecodeQr called. video.readyState = 4 videoWidth/Height = 1280 720 paused = false
+> qr.ts:87 [qr] resolved capture dimensions: 1280x720
+> qr.ts:106 [qr] native frame 1280x720, avgBrightness=155.5
+> qr.ts:69 [qr] native: jsQR result = FOUND {binaryData: Array(90), data: 'Tom|2026-09-25T16:14:28.723Z|2026-09-25T16:14:31.965Z|Josh~Headless Horseman,Tom~Pale Lady', chunks: Array(1), version: 5, location: {…}}
+> qr.ts:127 [qr] trying downscaled 640x360
+> qr.ts:69 [qr] downscaled: jsQR result = null null
+> qr.ts:138 [qr] no QR decoded in this capture
+> Home.tsx:119 [scan] captureAndDecodeQr returned: null
+
+*(Root cause found: jsQR's decoded string is on the `data` property, not `text` — fixed in `qr.ts`.)*
+
+## Prompt 30 — Success, discuss capture vs auto-scan
+
+> viola, this is precious, i fixed a build error by adding as any, presuming deepseek got the property name right, om*g, but we got there in the end, should we go back to auto scanning and detecting, or keep the capture button, hmm
+
+*(Chose to go back to auto-scan now that the decode bug was fixed — `scanForQr` reinstated in `qr.ts`/`Home.tsx`.)*
+
+## Prompt 31 — Update this file, switching back to Deepseek
+
+> update my prompt md file with latest prompts, probably going to go back to cheaper deepseek, but thanks

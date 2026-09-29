@@ -131,3 +131,39 @@ const getVideoDimensions = (
     }
     return { width: 640, height: 480 };
 };
+
+//
+// Continuously scan the camera feed for a QR code, calling
+// onDetect with the decoded text as soon as one is found.
+// Throttled to ~5fps to avoid burning CPU. Returns a stop function.
+//
+export const scanForQr = (
+    video: HTMLVideoElement,
+    stream: MediaStream | null,
+    onDetect: (text: string) => void,
+): () => void => {
+    let stopped = false;
+    let lastAttempt = 0;
+
+    const tick = () => {
+        if (stopped) return;
+
+        const now = Date.now();
+        if (now - lastAttempt >= 200) {
+            lastAttempt = now;
+            const text = captureAndDecodeQr(video, stream);
+            if (text) {
+                onDetect(text);
+                return;
+            }
+        }
+
+        requestAnimationFrame(tick);
+    };
+
+    requestAnimationFrame(tick);
+
+    return () => {
+        stopped = true;
+    };
+};
