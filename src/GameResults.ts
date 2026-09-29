@@ -80,6 +80,12 @@ export const getGeneralFacts = (games: GameResult[]): GeneralFacts => {
     };
 };
 
+export const getAllGamesSorted = (
+    games: GameResult[]
+): GameResult[] => [...games].sort(
+    (a, b) => Date.parse(b.end) - Date.parse(a.end)
+);
+
 export const getLeaderboard = (
     games: GameResult[]
 ): LeaderboardEntry[] => getPreviousPlayers(games)

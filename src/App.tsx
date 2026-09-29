@@ -8,6 +8,7 @@ import { APP_TITLE, Home } from './Home';
 import { Setup } from './Setup';
 import { Play } from './Play';
 import { 
+  getAllGamesSorted,
   getGeneralFacts, 
   getHeroLeaderboard,
   getLeaderboard,
@@ -549,6 +550,9 @@ const App = () => {
                   }
                   playerHeroMatrix={
                     getPlayerHeroMatrix(gameResults)
+                  }
+                  allGames={
+                    getAllGamesSorted(gameResults)
                   }
                 />
               }

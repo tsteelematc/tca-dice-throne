@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import type { GeneralFacts, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell } from "./GameResults";
+import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell } from "./GameResults";
 import { useEffect, useRef, useState } from "react";
 
 export const APP_TITLE = "My DT Life";
@@ -10,6 +10,7 @@ type HomeProps = {
     heroLeaderboard: LeaderboardEntry[],
     playerHeroLeaderboard: LeaderboardEntry[],
     playerHeroMatrix: PlayerHeroMatrix,
+    allGames: GameResult[],
     setTitle: (t: string) => void,
 };
 
@@ -20,6 +21,7 @@ export const Home: React.FC<HomeProps> = ({
     heroLeaderboard,
     playerHeroLeaderboard,
     playerHeroMatrix,
+    allGames,
     setTitle,
 }) => {
     
@@ -298,6 +300,73 @@ export const Home: React.FC<HomeProps> = ({
                             </table>
                         </div>
                     )}
+                </div>
+            </div>
+
+            <div className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+                <div className="card-body p-2">
+                    <h2
+                        className="card-title text-nowrap ml-3"
+                    >
+                        All Games
+                    </h2>
+                    {
+                        allGames.length === 0
+                            ? <p className="ml-3">N/A</p>
+                            : (
+                                <table className="table table-zebra">
+                                    <thead>
+                                        <tr>
+                                            <th>DATE</th>
+                                            <th>WINNER</th>
+                                            <th>LOSER</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {
+                                            allGames.map(
+                                                x => {
+                                                    const winner = x.players.find(
+                                                        p => p.name === x.winner
+                                                    );
+                                                    const losers = x.players.filter(
+                                                        p => p.name !== x.winner
+                                                    );
+                                                    return (
+                                                        <tr key={x.end}>
+                                                            <td>{ new Date(x.end).toLocaleDateString() }</td>
+                                                            <th>
+                                                                { x.winner }
+                                                                { winner && (
+                                                                    <span className="opacity-60">
+                                                                        {' '}({ winner.hero })
+                                                                    </span>
+                                                                ) }
+                                                            </th>
+                                                            <th>
+                                                                {
+                                                                    losers.map(
+                                                                        (l, i) => (
+                                                                            <span key={l.name}>
+                                                                                { i > 0 && ", " }
+                                                                                { l.name }
+                                                                                <span className="opacity-60">
+                                                                                    {' '}({ l.hero })
+                                                                                </span>
+                                                                            </span>
+                                                                        )
+                                                                    )
+                                                                }
+                                                            </th>
+                                                        </tr>
+                                                    );
+                                                }
+                                            )
+                                        }
+                                    </tbody>
+                                </table>
+                            )
+                    }
                 </div>
             </div>
 
