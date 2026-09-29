@@ -423,19 +423,23 @@ export const Home: React.FC<HomeProps> = ({
                                                     );
                                                     return (
                                                         <tr key={x.end}>
-                                                            <td className="text-nowrap">
-                                                                { new Date(x.end).toLocaleDateString() }
-                                                                <button
-                                                                    className="btn btn-ghost btn-xs btn-circle ml-1"
-                                                                    title="Share this game as a QR code"
-                                                                    onClick={() => openShareModal(x)}
-                                                                >
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h18v18H3zM7 7h10v10H7z" />
-                                                                    </svg>
-                                                                </button>
+                                                            <td className="text-nowrap" style={{ verticalAlign: 'top' }}>
+                                                                <div className="flex flex-col items-center gap-1">
+                                                                    <span>
+                                                                        { new Date(x.end).toLocaleDateString() }
+                                                                    </span>
+                                                                    <button
+                                                                        className="btn btn-ghost btn-xs btn-circle"
+                                                                        title="Share this game as a QR code"
+                                                                        onClick={() => openShareModal(x)}
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h18v18H3zM7 7h10v10H7z" />
+                                                                        </svg>
+                                                                    </button>
+                                                                </div>
                                                             </td>
-                                                            <th>
+                                                            <th style={{ verticalAlign: 'top' }}>
                                                                 { x.winner }
                                                                 { winner && (
                                                                     <span className="opacity-60">
@@ -443,7 +447,7 @@ export const Home: React.FC<HomeProps> = ({
                                                                     </span>
                                                                 ) }
                                                             </th>
-                                                            <th>
+                                                            <th style={{ verticalAlign: 'top' }}>
                                                                 {
                                                                     losers.map(
                                                                         (l, i) => (
@@ -476,10 +480,42 @@ export const Home: React.FC<HomeProps> = ({
                         <>
                             <h3 className="font-bold text-xl mb-1">Share Game</h3>
                             <p className="opacity-60 mb-4 text-sm">
-                                { shareGame.winner } won on{' '}
-                                <span className="font-semibold opacity-100 text-base-content">
-                                    { new Date(shareGame.end).toLocaleDateString() }
-                                </span>
+                                {
+                                    (() => {
+                                        const winner = shareGame.players.find(
+                                            p => p.name === shareGame.winner
+                                        );
+                                        const losers = shareGame.players.filter(
+                                            p => p.name !== shareGame.winner
+                                        );
+                                        return (
+                                            <>
+                                                <span className="font-semibold opacity-100 text-base-content">
+                                                    { shareGame.winner }
+                                                    { winner && ` (${winner.hero})` }
+                                                </span>
+                                                {' beat '}
+                                                {
+                                                    losers.map(
+                                                        (l, i) => (
+                                                            <span key={l.name}>
+                                                                { i > 0 && ", " }
+                                                                <span className="font-semibold opacity-100 text-base-content">
+                                                                    { l.name }
+                                                                    {` (${l.hero})`}
+                                                                </span>
+                                                            </span>
+                                                        )
+                                                    )
+                                                }
+                                                {' on '}
+                                                <span className="font-semibold opacity-100 text-base-content">
+                                                    { new Date(shareGame.end).toLocaleDateString() }
+                                                </span>
+                                            </>
+                                        );
+                                    })()
+                                }
                             </p>
                             <div className="flex justify-center my-4">
                                 <QRCodeSVG
