@@ -45,3 +45,97 @@
 ## Prompt 11 — Update this file
 
 > can you update my all games md with additional prompts used in this session
+
+## Prompt 12 — Camera capture not working
+
+> hmm, can't get capture to work, cameras come on, press capture, but no auto detecting qr code, or no behavior when pressing capture button, how suppose to work
+
+## Prompt 13 — Still can't recognize QR
+
+> cant get it to recognize a qr code
+
+## Prompt 14 — Camera never recognizes QR
+
+> can scan qr code with phone, copy text, paste, and see it work, but camera will never recognize the same qr code on its own and get the data, hmm
+
+## Prompt 15 — Different approach?
+
+> still cant get it to read a qr code, what are we missing, is there a diff approach to try, or keep tweaking what we have
+
+## Prompt 16 — No status text
+
+> no status text, no qr recognition, using surface pro front cam, but had previoulsy tried s25 device too, hmm
+
+## Prompt 17 — Stream logs
+
+> [qr] got stream MediaStream {id: 'bf23ece1-facb-4c5f-ae17-7ce565d2bea7', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+> qr.ts:34 [qr] video playing, dims: 640 480
+
+## Prompt 18 — Still no recognition
+
+> still no...
+>
+> [qr] got stream MediaStream {id: 'f13c1851-c25f-42e3-bd5c-6de78491ec40', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+> qr.ts:37 [qr] video playing, dims: 1280 720
+
+## Prompt 19 — Frame brightness logs
+
+> [qr] got stream MediaStream {id: 'b3c8649c-73ee-4edb-bb57-71aa6c968a4c', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+> qr.ts:37 [qr] video playing, dims: 1280 720
+> qr.ts:90 [qr] frame avg brightness: 72.8 (1280x720)
+> qr.ts:90 [qr] frame avg brightness: 123.4 (1280x720)
+> qr.ts:90 [qr] frame avg brightness: 131.2 (1280x720)
+> qr.ts:90 [qr] frame avg brightness: 137.7 (1280x720)
+> qr.ts:90 [qr] frame avg brightness: 134.9 (1280x720)
+> qr.ts:90 [qr] frame avg brightness: 132.4 (1280x720)
+> qr.ts:90 [qr] frame avg brightness: 133.9 (1280x720)
+> qr.ts:90 [qr] frame avg brightness: 133.6 (1280x720)
+> qr.ts:90 [qr] frame avg brightness: 134.4 (1280x720)
+> qr.ts:90 [qr] frame avg br
+
+## Prompt 20 — Malformed data error
+
+> [qr] got stream
+> 1. MediaStream {id: '058d168f-f38a-4c6a-867d-7c1e263114f2', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+>
+> qr.ts:37 [qr] video playing, dims: 1280 720
+>
+> jsQR.js:412 Uncaught Error: Malformed data passed to binarizer.
+>     at decodeQrFromPixels (qr.ts:53:18)
+>     at decodeFrame (qr.ts:100:18)
+>     at tick (qr.ts:177:26)
+>
+> qr.ts:34 [qr] got stream
+> 1. MediaStream {id: 'd732d169-f3fb-437e-af76-f145e868b98e', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+>
+> qr.ts:37 [qr] video playing, dims: 1280 720
+>
+> jsQR.js:412 Uncaught Error: Malformed data passed to binarizer.
+>     at decodeQrFromPixels (qr.ts:53:18)
+>     at decodeFrame (qr.ts:100:18)
+>     at tick (qr.ts:177:26)
+
+## Prompt 21 — Malformed data persists
+
+> [qr] got stream
+> 1. MediaStream {id: '191df3f8-7def-489f-ba40-dafc48f26a8c', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+>
+> qr.ts:37 [qr] video playing, dims: 1280 720
+>
+> jsQR.js:412 Uncaught Error: Malformed data passed to binarizer.
+>     at decodeQrFromPixels (qr.ts:59:18)
+>     at decodeFrame (qr.ts:106:18)
+>     at tick (qr.ts:183:26)
+
+## Prompt 22 — No log, no worky
+
+> no log, but no worky either
+
+## Prompt 23 — Decode attempt log
+
+> [qr] video playing, dims: 1280 720
+> 83qr.ts:88 [qr] decode attempt 1280x720, dataLen=3686400, expected=3686400
+
+## Prompt 24 — Update this file
+
+> update my md file with prompts so i can commit and push to my device

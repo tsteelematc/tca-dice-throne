@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 import { QRCodeSVG } from "qrcode.react";
 import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell } from "./GameResults";
 import { gameResultFromQrPayload, gameResultToQrPayload } from "./GameResults";
-import { decodeQrFromVideo, startCameraScan, stopVideoStream } from "./qr";
+import { scanForQr, startCameraScan, stopVideoStream } from "./qr";
 import { useEffect, useRef, useState } from "react";
 
 export const APP_TITLE = "My DT Life";
@@ -55,6 +55,8 @@ export const Home: React.FC<HomeProps> = ({
     const [scanStatus, setScanStatus] = useState("");
     const [scanStream, setScanStream] = useState<MediaStream | null>(null);
     const [scanPaste, setScanPaste] = useState("");
+    const [scanning, setScanning] = useState(false);
+    const scanStopRef = useRef<(() => void) | null>(null);
 
     const openShareModal = (game: GameResult) => {
         setShareGame(game);
@@ -68,37 +70,45 @@ export const Home: React.FC<HomeProps> = ({
     };
 
     const closeScanModal = () => {
-        stopVideoStream(scanStream);
-        setScanStream(null);
+        stopScan();
         scanModalRef.current?.close();
     };
 
     const startScan = async () => {
         const video = scanVideoRef.current;
-        if (!video) return;
-        setScanStatus("Requesting camera access...");
-        const stream = await startCameraScan(video);
-        if (!stream) {
-            setScanStatus("Camera unavailable — paste the QR text below instead.");
+        if (!video) {
+            console.error("[scan] video ref is null");
             return;
         }
-        setScanStream(stream);
-        setScanStatus("Point the camera at a QR code...");
+        setScanStatus("Requesting camera access...");
+        try {
+            const stream = await startCameraScan(video);
+            if (!stream) {
+                setScanStatus("Camera unavailable — paste the QR text below instead.");
+                return;
+            }
+            setScanStream(stream);
+            setScanning(true);
+            setScanStatus("Point the camera at a QR code — it will import automatically...");
+            scanStopRef.current = scanForQr(
+                video,
+                stream,
+                handleImportPayload,
+                setScanStatus,
+            );
+        } catch (e) {
+            console.error("[scan] startScan error", e);
+            setScanStatus("Camera error — paste the QR text below instead.");
+        }
     };
 
     const stopScan = () => {
+        scanStopRef.current?.();
+        scanStopRef.current = null;
         stopVideoStream(scanStream);
         setScanStream(null);
+        setScanning(false);
         setScanStatus("");
-    };
-
-    const tryDecode = () => {
-        const video = scanVideoRef.current;
-        if (!video) return;
-        const text = decodeQrFromVideo(video);
-        if (text) {
-            handleImportPayload(text);
-        }
     };
 
     const handleImportPayload = (payload: string) => {
@@ -484,7 +494,7 @@ export const Home: React.FC<HomeProps> = ({
                                 <QRCodeSVG
                                     value={gameResultToQrPayload(shareGame)}
                                     size={220}
-                                    level="M"
+                                    level="L"
                                 />
                             </div>
                             <p className="opacity-60 text-sm text-center">
@@ -513,6 +523,7 @@ export const Home: React.FC<HomeProps> = ({
                         <video
                             ref={scanVideoRef}
                             className="w-full rounded-xl bg-base-200"
+                            style={{ width: '100%', aspectRatio: '4 / 3' }}
                             playsInline
                             muted
                         />
@@ -520,18 +531,14 @@ export const Home: React.FC<HomeProps> = ({
                             <button
                                 className="btn btn-primary"
                                 onClick={startScan}
+                                disabled={scanning}
                             >
                                 Start Camera
                             </button>
                             <button
                                 className="btn btn-ghost"
-                                onClick={tryDecode}
-                            >
-                                Capture
-                            </button>
-                            <button
-                                className="btn btn-ghost"
                                 onClick={stopScan}
+                                disabled={!scanning}
                             >
                                 Stop
                             </button>

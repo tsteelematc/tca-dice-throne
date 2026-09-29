@@ -89,22 +89,50 @@ export const getAllGamesSorted = (
 //
 // QR share/import helpers...
 //
+// Encode a game as a compact, pipe-delimited string so the QR code
+// stays low-version (less dense) and easier for a camera to decode.
+// Format: winner|start|end|name~hero,name~hero,...
 export const gameResultToQrPayload = (
     game: GameResult
-): string => JSON.stringify(game);
+): string => {
+    const players = game.players.map(
+        p => `${p.name}~${p.hero}`
+    ).join(",");
+    return [
+        game.winner,
+        game.start,
+        game.end,
+        players,
+    ].join("|");
+};
 
 export const gameResultFromQrPayload = (
     payload: string
 ): GameResult | null => {
     try {
-        const parsed = JSON.parse(payload);
+        const parts = payload.split("|");
+        if (parts.length !== 4) {
+            return null;
+        }
+        const [winner, start, end, playersStr] = parts;
+        const players = playersStr.split(",").map(
+            pair => {
+                const [name, hero] = pair.split("~");
+                return { name, hero };
+            }
+        );
         if (
-            typeof parsed?.winner === "string"
-            && Array.isArray(parsed?.players)
-            && typeof parsed?.start === "string"
-            && typeof parsed?.end === "string"
+            typeof winner === "string"
+            && Array.isArray(players)
+            && typeof start === "string"
+            && typeof end === "string"
         ) {
-            return parsed as GameResult;
+            return {
+                winner,
+                players,
+                start,
+                end,
+            } as GameResult;
         }
         return null;
     } catch {
