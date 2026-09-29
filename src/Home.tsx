@@ -537,6 +537,7 @@ export const Home: React.FC<HomeProps> = ({
                                 Stop
                             </button>
                         </div>
+                        {/*
                         <textarea
                             className="textarea w-full"
                             placeholder="...or paste the QR text here"
@@ -549,6 +550,7 @@ export const Home: React.FC<HomeProps> = ({
                         >
                             Import Pasted Game
                         </button>
+                        */}
                         { scanStatus.length > 0 && (
                             <p className="opacity-80 text-sm">{scanStatus}</p>
                         ) }

@@ -195,3 +195,19 @@
 ## Prompt 33 — Update this file
 
 > update md prompt history too
+
+## Prompt 34 — Still front cam, hold off on mobile?
+
+> still front cam on surface pro, check again, should i wait and not build for mobile yet
+
+*(Added `getUserMediaPreferringRearCamera()` in `qr.ts` — enumerates devices and explicitly selects a rear camera by label, falling back to the `facingMode: "environment"` hint. Advised holding off on mobile-specific work for now.)*
+
+## Prompt 35 — Comment out paste UI
+
+> can we comment out the paste text and button, assuming it works for 90%, don't want to totally lose that code, of course always in git, but comment out for now
+
+*(Commented out the paste textarea + "Import Pasted Game" button in the scan modal JSX in `Home.tsx`, keeping the code in git.)*
+
+## Prompt 36 — Update this file
+
+> update my prompt md
