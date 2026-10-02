@@ -47,11 +47,28 @@ export const Play: React.FC<PlayProps> = ({
         })
     );
 
+    const [order, setOrder] = useState<string[]>(() => players.map(x => x.name));
+
+    const move = (name: string, delta: number) => setOrder(
+        o => {
+            const i = o.indexOf(name);
+            const j = i + delta;
+            if (i < 0 || j < 0 || j >= o.length) return o;
+            const next = [...o];
+            [next[i], next[j]] = [next[j], next[i]];
+            return next;
+        }
+    );
+
+    const orderedPlayers = order
+        .map(name => players.find(p => p.name === name))
+        .filter((p): p is Player => p !== undefined);
+
     // Then return JSX...
     return (
         <>
             {
-                players.map(
+                orderedPlayers.map(
                     x => (
                         <div
                             key={x.name}
@@ -62,6 +79,23 @@ export const Play: React.FC<PlayProps> = ({
                                     <h2 className="card-title">
                                         {`${x.name} (${x.hero})`}
                                     </h2>
+                                    <div className="flex items-center gap-1">
+                                    <button
+                                        className="btn btn-ghost btn-xs"
+                                        aria-label="Move up"
+                                        disabled={order.indexOf(x.name) === 0}
+                                        onClick={() => move(x.name, -1)}
+                                    >
+                                        ▲
+                                    </button>
+                                    <button
+                                        className="btn btn-ghost btn-xs"
+                                        aria-label="Move down"
+                                        disabled={order.indexOf(x.name) === order.length - 1}
+                                        onClick={() => move(x.name, 1)}
+                                    >
+                                        ▼
+                                    </button>
                                     <button
                                         className="btn btn-ghost btn-xs"
                                         onClick={
@@ -70,39 +104,23 @@ export const Play: React.FC<PlayProps> = ({
                                     >
                                         Reset
                                     </button>
+                                    </div>
                                 </div>
                                 <div className="text-5xl font-bold text-center my-2">
                                     {health[x.name] ?? STARTING_HEALTH}
                                 </div>
-                                <div className="flex flex-wrap gap-2 justify-center">
+                                <div className="flex flex-nowrap gap-1 justify-center">
                                     {
-                                        [-5, -3, -2, -1].map(
+                                        [-5, -3, -2, -1, 1, 3].map(
                                             n => (
                                                 <button
                                                     key={n}
-                                                    className="btn btn-sm btn-outline btn-error"
+                                                    className={`btn btn-xl h-20 text-3xl btn-outline px-0 flex-1 min-w-0 ${n < 0 ? "btn-error" : "btn-success"}`}
                                                     onClick={
                                                         () => adjustHealth(x.name, n)
                                                     }
                                                 >
-                                                    {n}
-                                                </button>
-                                            )
-                                        )
-                                    }
-                                </div>
-                                <div className="flex flex-wrap gap-2 justify-center mt-2">
-                                    {
-                                        [1, 2, 3, 5].map(
-                                            n => (
-                                                <button
-                                                    key={n}
-                                                    className="btn btn-sm btn-outline btn-success"
-                                                    onClick={
-                                                        () => adjustHealth(x.name, n)
-                                                    }
-                                                >
-                                                    {`+${n}`}
+                                                    {n > 0 ? `+${n}` : n}
                                                 </button>
                                             )
                                         )
