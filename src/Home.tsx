@@ -407,8 +407,8 @@ export const Home: React.FC<HomeProps> = ({
                                     <thead>
                                         <tr>
                                             <th>DATE</th>
-                                            <th>WINNER</th>
-                                            <th>LOSER</th>
+                                            <th>W</th>
+                                            <th>L</th>
                                         </tr>
                                     </thead>
                                     <tbody>
