@@ -40,13 +40,6 @@ export const Play: React.FC<PlayProps> = ({
         })
     );
 
-    const resetHealth = (name: string) => setHealth(
-        h => ({
-            ...h,
-            [name]: STARTING_HEALTH,
-        })
-    );
-
     const [order, setOrder] = useState<string[]>(() => players.map(x => x.name));
 
     const move = (name: string, delta: number) => setOrder(
@@ -95,14 +88,6 @@ export const Play: React.FC<PlayProps> = ({
                                         onClick={() => move(x.name, 1)}
                                     >
                                         ▼
-                                    </button>
-                                    <button
-                                        className="btn btn-ghost btn-xs"
-                                        onClick={
-                                            () => resetHealth(x.name)
-                                        }
-                                    >
-                                        Reset
                                     </button>
                                     </div>
                                 </div>
