@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router";
 import { QRCodeSVG } from "qrcode.react";
-import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell } from "./GameResults";
+import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell, AverageDurationEntry } from "./GameResults";
 import { gameResultFromQrPayload, gameResultToQrPayload, formatRealGameDuration } from "./GameResults";
 import { scanForQr, startCameraScan, stopVideoStream } from "./qr";
 import { useEffect, useRef, useState } from "react";
@@ -13,6 +13,8 @@ type HomeProps = {
     heroLeaderboard: LeaderboardEntry[],
     playerHeroLeaderboard: LeaderboardEntry[],
     playerHeroMatrix: PlayerHeroMatrix,
+    playerAverageDurations: AverageDurationEntry[],
+    heroAverageDurations: AverageDurationEntry[],
     allGames: GameResult[],
     importGameResult: (g: GameResult) => void,
     setTitle: (t: string) => void,
@@ -25,6 +27,8 @@ export const Home: React.FC<HomeProps> = ({
     heroLeaderboard,
     playerHeroLeaderboard,
     playerHeroMatrix,
+    playerAverageDurations,
+    heroAverageDurations,
     allGames,
     importGameResult,
     setTitle,
@@ -392,6 +396,41 @@ export const Home: React.FC<HomeProps> = ({
                     )}
                 </div>
             </div>
+
+            {[
+                { title: "Slow Players?", label: "PLAYER", entries: playerAverageDurations },
+                { title: "Slow Heroes?", label: "HERO", entries: heroAverageDurations },
+            ].map(card => (
+                <div key={card.title} className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+                    <div className="card-body p-2">
+                        <h2 className="card-title text-nowrap ml-3">
+                            {card.title}
+                        </h2>
+                        {card.entries.length === 0 ? (
+                            <p className="ml-3">N/A</p>
+                        ) : (
+                            <table className="table table-zebra">
+                                <thead>
+                                    <tr>
+                                        <th>{card.label}</th>
+                                        <th>GAMES</th>
+                                        <th>AVG</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {card.entries.map(x => (
+                                        <tr key={x.name}>
+                                            <th>{x.name}</th>
+                                            <td>{x.games}</td>
+                                            <td>{x.avg}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </div>
+            ))}
 
             <div className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                 <div className="card-body p-2">

@@ -31,6 +31,12 @@ export type GeneralFacts = {
     longestGame: string;
 };
 
+export type AverageDurationEntry = {
+    name: string;
+    games: number;
+    avg: string;
+};
+
 // Games shorter than this are assumed to be data entry errors.
 export const MIN_REAL_GAME_MINUTES = 10;
 const MIN_REAL_GAME_MS = MIN_REAL_GAME_MINUTES * 60 * 1000;
@@ -101,6 +107,43 @@ export const getGeneralFacts = (games: GameResult[]): GeneralFacts => {
             : "N/A",
     };
 };
+
+const getAverageDurations = (
+    games: GameResult[],
+    getKey: (p: Player) => string
+): AverageDurationEntry[] => {
+    const totals = new Map<string, { total: number, count: number }>();
+
+    games.filter(
+        g => getGameDurationMs(g) >= MIN_REAL_GAME_MS
+    ).forEach(
+        g => {
+            const ms = getGameDurationMs(g);
+            new Set(g.players.map(getKey)).forEach(
+                key => {
+                    const t = totals.get(key) ?? { total: 0, count: 0 };
+                    totals.set(key, { total: t.total + ms, count: t.count + 1 });
+                }
+            );
+        }
+    );
+
+    return [...totals.entries()].map(
+        ([name, t]) => ({ name, games: t.count, avgMs: t.total / t.count })
+    ).sort(
+        (a, b) => b.avgMs - a.avgMs
+    ).map(
+        x => ({ name: x.name, games: x.games, avg: formatGameDuration(x.avgMs) })
+    );
+};
+
+export const getPlayerAverageDurations = (
+    games: GameResult[]
+): AverageDurationEntry[] => getAverageDurations(games, p => p.name);
+
+export const getHeroAverageDurations = (
+    games: GameResult[]
+): AverageDurationEntry[] => getAverageDurations(games, p => p.hero);
 
 export const getAllGamesSorted = (
     games: GameResult[]

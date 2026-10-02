@@ -10,6 +10,8 @@ import { Play } from './Play';
 import { 
   getAllGamesSorted,
   getGeneralFacts, 
+  getPlayerAverageDurations,
+  getHeroAverageDurations,
   getHeroLeaderboard,
   getLeaderboard,
   getPlayerHeroLeaderboard,
@@ -573,6 +575,12 @@ const App = () => {
                   }
                   playerHeroMatrix={
                     getPlayerHeroMatrix(gameResults)
+                  }
+                  playerAverageDurations={
+                    getPlayerAverageDurations(gameResults)
+                  }
+                  heroAverageDurations={
+                    getHeroAverageDurations(gameResults)
                   }
                   allGames={
                     getAllGamesSorted(gameResults)
