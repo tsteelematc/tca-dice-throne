@@ -26,8 +26,23 @@ export type LeaderboardEntry = {
 export type GeneralFacts = {
     lastPlayed: string;
     totalGames: number;
+    averageGame: string;
     shortestGame: string;
     longestGame: string;
+};
+
+// Games shorter than this are assumed to be data entry errors.
+export const MIN_REAL_GAME_MINUTES = 10;
+const MIN_REAL_GAME_MS = MIN_REAL_GAME_MINUTES * 60 * 1000;
+
+const getGameDurationMs = (game: GameResult): number =>
+    Date.parse(game.end) - Date.parse(game.start);
+
+export const formatRealGameDuration = (
+    game: GameResult
+): string | null => {
+    const ms = getGameDurationMs(game);
+    return ms >= MIN_REAL_GAME_MS ? formatGameDuration(ms) : null;
 };
 
 //
@@ -39,6 +54,7 @@ export const getGeneralFacts = (games: GameResult[]): GeneralFacts => {
         return {
             lastPlayed: "N/A",
             totalGames: 0,
+            averageGame: "N/A",
             shortestGame: "N/A",
             longestGame: "N/A",
         };
@@ -55,8 +71,12 @@ export const getGeneralFacts = (games: GameResult[]): GeneralFacts => {
     );
 
     const gameDurationsInMilliseconds = games.map(
-        x => Date.parse(x.end) - Date.parse(x.start)
+        getGameDurationMs
+    ).filter(
+        x => x >= MIN_REAL_GAME_MS
     );
+
+    const hasRealGames = gameDurationsInMilliseconds.length > 0;
 
     // console.log(
     //     gamesLastPlayedAgoInMilliseconds
@@ -67,16 +87,18 @@ export const getGeneralFacts = (games: GameResult[]): GeneralFacts => {
             mostRecentlyPlayedInMilliseconds
         )} ago`,
         totalGames: games.length,
-        shortestGame: formatGameDuration(
-            Math.min(
-                ...gameDurationsInMilliseconds
-            ),
-         ),
-        longestGame: formatGameDuration(
-            Math.max(
-                ...gameDurationsInMilliseconds
-            ),
-         ),         
+        averageGame: hasRealGames
+            ? formatGameDuration(
+                gameDurationsInMilliseconds.reduce((a, b) => a + b, 0)
+                    / gameDurationsInMilliseconds.length
+            )
+            : "N/A",
+        shortestGame: hasRealGames
+            ? formatGameDuration(Math.min(...gameDurationsInMilliseconds))
+            : "N/A",
+        longestGame: hasRealGames
+            ? formatGameDuration(Math.max(...gameDurationsInMilliseconds))
+            : "N/A",
     };
 };
 

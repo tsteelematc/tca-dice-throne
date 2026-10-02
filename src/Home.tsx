@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { QRCodeSVG } from "qrcode.react";
 import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell } from "./GameResults";
-import { gameResultFromQrPayload, gameResultToQrPayload } from "./GameResults";
+import { gameResultFromQrPayload, gameResultToQrPayload, formatRealGameDuration } from "./GameResults";
 import { scanForQr, startCameraScan, stopVideoStream } from "./qr";
 import { useEffect, useRef, useState } from "react";
 
@@ -164,6 +164,18 @@ export const Home: React.FC<HomeProps> = ({
                             <tr>
                                 <td>Total Games</td>
                                 <th>{generalFacts.totalGames}</th>
+                            </tr>
+                            <tr>
+                                <td>Average Game</td>
+                                <th>{generalFacts.averageGame}</th>
+                            </tr>
+                            <tr>
+                                <td>Shortest Game</td>
+                                <th>{generalFacts.shortestGame}</th>
+                            </tr>
+                            <tr>
+                                <td>Longest Game</td>
+                                <th>{generalFacts.longestGame}</th>
                             </tr>
                         </tbody>
                     </table>
@@ -428,6 +440,11 @@ export const Home: React.FC<HomeProps> = ({
                                                                     <span>
                                                                         { new Date(x.end).toLocaleDateString() }
                                                                     </span>
+                                                                    { formatRealGameDuration(x) && (
+                                                                        <span className="text-xs opacity-60">
+                                                                            { formatRealGameDuration(x) }
+                                                                        </span>
+                                                                    ) }
                                                                     <button
                                                                         className="btn btn-ghost btn-xs btn-circle"
                                                                         title="Share this game as a QR code"
