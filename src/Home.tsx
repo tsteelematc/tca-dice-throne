@@ -42,6 +42,17 @@ export const Home: React.FC<HomeProps> = ({
     const nav = useNavigate();
 
     const [selectedCell, setSelectedCell] = useState<PlayerHeroCell | null>(null);
+
+    const [hl, setHl] = useState<{ kind: 'player' | 'hero', name: string } | null>(null);
+
+    const toggleHighlight = (kind: 'player' | 'hero', name: string) => setHl(
+        hl?.kind === kind && hl.name === name ? null : { kind, name }
+    );
+
+    const rowStyle = (on: boolean): React.CSSProperties | undefined => on
+        ? { backgroundColor: 'color-mix(in srgb, var(--color-warning) 25%, transparent)' }
+        : undefined
+    ;
     const heatmapModalRef = useRef<HTMLDialogElement>(null);
 
     const openHeatmapCell = (cell: PlayerHeroCell) => {
@@ -152,6 +163,18 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
             </section>
 
+            {hl && (
+                <div className="flex justify-center my-2">
+                    <button
+                        className="btn btn-ghost btn-xs opacity-70"
+                        title="Clear highlight"
+                        onClick={() => setHl(null)}
+                    >
+                        Highlighting: {hl.name} ✕
+                    </button>
+                </div>
+            )}
+
             <div className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                 <div className="card-body p-2">
                     <h2 
@@ -211,6 +234,9 @@ export const Home: React.FC<HomeProps> = ({
                                                 x => (
                                                     <tr
                                                         key={x.name}
+                                                        className="cursor-pointer"
+                                                        style={rowStyle(hl?.kind === 'player' && hl.name === x.name)}
+                                                        onClick={() => toggleHighlight('player', x.name)}
                                                     >
                                                         <td>
                                                             { x.wins }
@@ -260,6 +286,9 @@ export const Home: React.FC<HomeProps> = ({
                                                 x => (
                                                     <tr
                                                         key={x.name}
+                                                        className="cursor-pointer"
+                                                        style={rowStyle(hl?.kind === 'hero' && hl.name === x.name)}
+                                                        onClick={() => toggleHighlight('hero', x.name)}
                                                     >
                                                         <td>
                                                             { x.wins }
@@ -309,6 +338,11 @@ export const Home: React.FC<HomeProps> = ({
                                                 x => (
                                                     <tr
                                                         key={x.name}
+                                                        style={rowStyle(
+                                                            hl?.kind === 'player'
+                                                                ? x.name.startsWith(`${hl.name} (`)
+                                                                : hl?.kind === 'hero' && x.name.endsWith(`(${hl.name})`)
+                                                        )}
                                                     >
                                                         <td>
                                                             { x.wins }
@@ -347,7 +381,7 @@ export const Home: React.FC<HomeProps> = ({
                                     <tr>
                                         <th></th>
                                         {playerHeroMatrix.heroes.map(hero => (
-                                            <th key={hero} style={{ verticalAlign: 'bottom', padding: '0 0 4px', textAlign: 'center' }}>
+                                            <th key={hero} style={{ verticalAlign: 'bottom', padding: '0 0 4px', textAlign: 'center', ...rowStyle(hl?.kind === 'hero' && hl.name === hero) }}>
                                                 <span
                                                     className="text-xs font-medium opacity-60 text-nowrap"
                                                     style={{ display: 'inline-block', writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
@@ -361,7 +395,10 @@ export const Home: React.FC<HomeProps> = ({
                                 <tbody>
                                     {playerHeroMatrix.players.map(player => (
                                         <tr key={player}>
-                                            <td className="text-xs font-medium text-right pr-2 text-nowrap opacity-60">
+                                            <td
+                                                className="text-xs font-medium text-right pr-2 text-nowrap opacity-60"
+                                                style={rowStyle(hl?.kind === 'player' && hl.name === player)}
+                                            >
                                                 {player}
                                             </td>
                                             {playerHeroMatrix.heroes.map(hero => {
@@ -419,7 +456,10 @@ export const Home: React.FC<HomeProps> = ({
                                 </thead>
                                 <tbody>
                                     {card.entries.map(x => (
-                                        <tr key={x.name}>
+                                        <tr
+                                            key={x.name}
+                                            style={rowStyle(hl?.kind === (card.label === 'PLAYER' ? 'player' : 'hero') && hl.name === x.name)}
+                                        >
                                             <th>{x.name}</th>
                                             <td>{x.games}</td>
                                             <td>{x.avg}</td>
@@ -473,7 +513,14 @@ export const Home: React.FC<HomeProps> = ({
                                                         p => p.name !== x.winner
                                                     );
                                                     return (
-                                                        <tr key={x.end}>
+                                                        <tr
+                                                            key={x.end}
+                                                            style={rowStyle(
+                                                                hl !== null && x.players.some(
+                                                                    p => (hl.kind === 'player' ? p.name : p.hero) === hl.name
+                                                                )
+                                                            )}
+                                                        >
                                                             <td className="text-nowrap" style={{ verticalAlign: 'top' }}>
                                                                 <div className="flex flex-col items-center gap-1">
                                                                     <span>
