@@ -49,6 +49,24 @@ export const Home: React.FC<HomeProps> = ({
         hl?.kind === kind && hl.name === name ? null : { kind, name }
     );
 
+    const highlightChip = (kind: 'player' | 'hero') => (
+        hl?.kind === kind
+            ? (
+                <button
+                    className="btn btn-ghost btn-xs opacity-70 ml-2 self-start"
+                    title="Clear highlight"
+                    onClick={() => setHl(null)}
+                >
+                    Highlighting: {hl.name} — tap to cancel ✕
+                </button>
+            )
+            : (
+                <span className="badge badge-ghost badge-sm font-normal ml-2 self-start">
+                    Tap row to highlight
+                </span>
+            )
+    );
+
     const rowStyle = (on: boolean): React.CSSProperties | undefined => on
         ? { backgroundColor: 'color-mix(in srgb, var(--color-warning) 25%, transparent)' }
         : undefined
@@ -163,18 +181,6 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
             </section>
 
-            {hl && (
-                <div className="flex justify-center my-2">
-                    <button
-                        className="btn btn-ghost btn-xs opacity-70"
-                        title="Clear highlight"
-                        onClick={() => setHl(null)}
-                    >
-                        Highlighting: {hl.name} ✕
-                    </button>
-                </div>
-            )}
-
             <div className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                 <div className="card-body p-2">
                     <h2 
@@ -215,6 +221,7 @@ export const Home: React.FC<HomeProps> = ({
                     >
                         Player Leaderboard
                     </h2>
+                    {highlightChip('player')}
                     {
                         leaderboard.length === 0
                             ? <p className="ml-3">N/A</p>
@@ -267,6 +274,7 @@ export const Home: React.FC<HomeProps> = ({
                     >
                         Hero Leaderboard
                     </h2>
+                    {highlightChip('hero')}
                     {
                         heroLeaderboard.length === 0
                             ? <p className="ml-3">N/A</p>
