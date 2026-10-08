@@ -523,11 +523,6 @@ export const Home: React.FC<HomeProps> = ({
                                                     return (
                                                         <tr
                                                             key={x.end}
-                                                            style={rowStyle(
-                                                                hl !== null && x.players.some(
-                                                                    p => (hl.kind === 'player' ? p.name : p.hero) === hl.name
-                                                                )
-                                                            )}
                                                         >
                                                             <td className="text-nowrap" style={{ verticalAlign: 'top' }}>
                                                                 <div className="flex flex-col items-center gap-1">
@@ -551,9 +546,14 @@ export const Home: React.FC<HomeProps> = ({
                                                                 </div>
                                                             </td>
                                                             <th style={{ verticalAlign: 'top' }}>
-                                                                { x.winner }
+                                                                <span style={rowStyle(hl?.kind === 'player' && hl.name === x.winner)}>
+                                                                    { x.winner }
+                                                                </span>
                                                                 { winner && (
-                                                                    <span className="opacity-60">
+                                                                    <span
+                                                                        className="opacity-60"
+                                                                        style={rowStyle(hl?.kind === 'hero' && hl.name === winner.hero)}
+                                                                    >
                                                                         {' '}({ winner.hero })
                                                                     </span>
                                                                 ) }
@@ -564,8 +564,13 @@ export const Home: React.FC<HomeProps> = ({
                                                                         (l, i) => (
                                                                             <span key={l.name}>
                                                                                 { i > 0 && ", " }
-                                                                                { l.name }
-                                                                                <span className="opacity-60">
+                                                                                <span style={rowStyle(hl?.kind === 'player' && hl.name === l.name)}>
+                                                                                    { l.name }
+                                                                                </span>
+                                                                                <span
+                                                                                    className="opacity-60"
+                                                                                    style={rowStyle(hl?.kind === 'hero' && hl.name === l.hero)}
+                                                                                >
                                                                                     {' '}({ l.hero })
                                                                                 </span>
                                                                             </span>
