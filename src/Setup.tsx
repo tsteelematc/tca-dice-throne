@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import type { Player } from "./GameResults";
 
@@ -46,10 +46,97 @@ export const Setup: React.FC<SetupProps> = ({
     const [choosingForPlayer, setChoosingForPlayer] = useState("");
     const [newHeroName, setNewHeroName] = useState("");
 
+    const [skippedHeroes, setSkippedHeroes] = useState<string[]>([]);
+    const [extraSpinNames, setExtraSpinNames] = useState("");
+    const [spinning, setSpinning] = useState(false);
+    const [spinDisplay, setSpinDisplay] = useState("");
+    const [spinWinner, setSpinWinner] = useState("");
+    const spinTimer = useRef<number | undefined>(undefined);
+
     useEffect(
         () => setTitle("Setup"),
         [],
     );
+
+    useEffect(
+        () => () => window.clearTimeout(spinTimer.current),
+        [],
+    );
+
+    // Dedupe only at spin time so the input text is never rewritten while typing
+    const spinPool = (() => {
+        const seen = new Set<string>();
+        return [
+            ...availableHeroes
+                .map(x => x.name)
+                .filter(x => !skippedHeroes.includes(x)),
+            ...extraSpinNames.split(",").map(x => x.trim()),
+        ].filter(x => {
+            const key = x.toLowerCase();
+            if (x.length === 0 || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    })();
+
+    const selectHero = (heroName: string) => {
+        setAvailablePlayers(
+            availablePlayers.map(
+                y => ({
+                    ...y,
+                    hero: y.name === choosingForPlayer
+                        ? heroName
+                        : y.hero
+                    ,
+                })
+            )
+        );
+        const heroes = availableHeroes.some(y => y.name === heroName)
+            ? availableHeroes
+            : [...availableHeroes, { name: heroName, checked: false }].sort(
+                (a, b) => a.name.localeCompare(b.name)
+            )
+        ;
+        setAvailableHeroes(
+            heroes.map(
+                y => ({
+                    name: y.name,
+                    checked: y.name === heroName,
+                })
+            )
+        );
+        setDrawerOpen(false);
+        setSpinWinner("");
+        setSpinDisplay("");
+    };
+
+    const spin = () => {
+        if (spinPool.length === 0) return;
+        const winner = spinPool[Math.floor(Math.random() * spinPool.length)];
+        const totalTicks = 30 + Math.floor(Math.random() * 10);
+        let tick = 0;
+        setSpinning(true);
+        setSpinWinner("");
+
+        const step = () => {
+            tick++;
+            const isLast = tick >= totalTicks;
+            setSpinDisplay(
+                isLast
+                    ? winner
+                    : spinPool[Math.floor(Math.random() * spinPool.length)]
+            );
+            if (isLast) {
+                setSpinning(false);
+                setSpinWinner(winner);
+                return;
+            }
+            // Delay grows each tick for the dramatic slow down
+            const delay = 50 + Math.pow(tick / totalTicks, 3) * 600;
+            spinTimer.current = window.setTimeout(step, delay);
+        };
+        step();
+    };
 
     // Dupe state : - (
     //const [dupePlayerName, setDupePlayerName] = useState(false);
@@ -308,46 +395,87 @@ export const Setup: React.FC<SetupProps> = ({
                             Add
                         </button>
                     </div>
+                    <div className="card bg-base-100 shadow mb-4">
+                        <div className="card-body p-3 gap-2">
+                            <h3 className="font-bold">Spin for a Hero ↻</h3>
+                            <input
+                                type="text"
+                                className="input input-sm w-full"
+                                placeholder="Extra fighters, comma separated"
+                                value={extraSpinNames}
+                                onChange={(e) => setExtraSpinNames(e.target.value)}
+                                disabled={spinning}
+                            />
+                            <div
+                                className={`text-center text-2xl font-bold py-4 min-h-16 rounded bg-base-200 ${spinWinner ? 'text-success' : ''}`}
+                            >
+                                {spinDisplay || "?"}
+                            </div>
+                            {
+                                spinWinner ? (
+                                    <div className="flex gap-2">
+                                        <button
+                                            className="btn btn-success flex-1"
+                                            onClick={() => selectHero(spinWinner)}
+                                        >
+                                            Use
+                                        </button>
+                                        <button
+                                            className="btn flex-1"
+                                            onClick={spin}
+                                        >
+                                            Spin Again
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={spin}
+                                        disabled={spinning || spinPool.length === 0}
+                                    >
+                                        {spinning ? "Spinning..." : `Spin (${spinPool.length})`}
+                                    </button>
+                                )
+                            }
+                        </div>
+                    </div>
                     {
                         availableHeroes.map(
                             x => (
-                                <label
+                                <div
                                     key={x.name}
                                     className="text-lg mt-2 flex items-center gap-1"
                                 >
-                                    <input 
-                                        type="radio"
-                                        name="hero-choice"
-                                        className="radio radio-lg mr-2"
-                                        checked={x.checked}
-                                        onChange={() => {}}
-                                        onClick={
-                                            () => {
-                                                setAvailablePlayers(
-                                                    availablePlayers.map(
-                                                        y => ({
-                                                            ...y,
-                                                            hero: y.name === choosingForPlayer
-                                                                ? x.name
-                                                                : y.hero
-                                                            ,
-                                                        })
-                                                    )
-                                                );
-                                                setAvailableHeroes(
-                                                    availableHeroes.map(
-                                                        y => ({
-                                                            name: y.name,
-                                                            checked: y.name === x.name,
-                                                        })
-                                                    )
-                                                );
-                                                setDrawerOpen(false);
-                                            }
+                                    <label className="flex items-center flex-1">
+                                        <input 
+                                            type="radio"
+                                            name="hero-choice"
+                                            className="radio radio-lg mr-2"
+                                            checked={x.checked}
+                                            onChange={() => {}}
+                                            onClick={() => selectHero(x.name)}
+                                        />
+                                        {x.name}
+                                    </label>
+                                    <button
+                                        className="btn btn-ghost btn-xs btn-circle text-base-content/60"
+                                        title={
+                                            skippedHeroes.includes(x.name)
+                                                ? "Not in spin (click to include)"
+                                                : "In spin (click to exclude)"
                                         }
-                                    />
-                                    {x.name}
-                                </label>
+                                        disabled={spinning}
+                                        onClick={
+                                            () => setSkippedHeroes(
+                                                skippedHeroes.includes(x.name)
+                                                    ? skippedHeroes.filter(y => y !== x.name)
+                                                    : [...skippedHeroes, x.name]
+                                            )
+                                        }
+                                    >
+                                        {skippedHeroes.includes(x.name) ? "✕" : "↻"}
+                                    </button>
+                                </div>
                             )
                         )
                     }

@@ -43,6 +43,10 @@
     --color-accent-content: #1a0d02;
     --color-neutral: #1a1714;
     --color-neutral-content: #f6f5f3;
+    --color-success: #15803d;
+    --color-success-content: #f0fdf4;
+    --color-error: #b91c1c;
+    --color-error-content: #fef2f2;
     background-image: linear-gradient(155deg, #fafaf9 0%, #f0eeeb 45%, #e6e2dd 100%);
 }
 
@@ -59,6 +63,10 @@
     --color-accent-content: #1a0d02;
     --color-neutral: #000000;
     --color-neutral-content: #ece8e2;
+    --color-success: #16a34a;
+    --color-success-content: #f0fdf4;
+    --color-error: #dc2626;
+    --color-error-content: #fef2f2;
     background-image: linear-gradient(155deg, #000000 0%, #0c0b0a 45%, #171310 100%);
 }
 
