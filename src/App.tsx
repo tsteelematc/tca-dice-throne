@@ -26,6 +26,7 @@ import localforage from 'localforage';
 import {
   saveGameToCloud,
   loadGamesFromCloud,
+  deleteGameFromCloud,
 } from './tca-cloud-api';
 
 const DEFAULT_THEME = "light";
@@ -472,6 +473,27 @@ const App = () => {
   }
 
   //
+  // Delete a game result from the cloud (and local state)...
+  //
+  const deleteGameResult = async (end: string) => {
+    // Delete from the cloud if an email is configured...
+    if (emailForCoudApi.length > 0) {
+      await deleteGameFromCloud(
+        emailForCoudApi,
+        "tca-dice-throne-26s",
+        end,
+      );
+    }
+
+    // Optimistically update local state...
+    setGameResults(
+      gameResults.filter(
+        g => g.end !== end
+      )
+    );
+  }
+
+  //
   // Return JSX...
   //
   return (
@@ -586,6 +608,8 @@ const App = () => {
                     getAllGamesSorted(gameResults)
                   }
                   importGameResult={importGameResult}
+                  partitionKey={emailForCoudApi}
+                  deleteGameResult={deleteGameResult}
                 />
               }
             />

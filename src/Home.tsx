@@ -18,6 +18,8 @@ type HomeProps = {
     allGames: GameResult[],
     importGameResult: (g: GameResult) => void,
     setTitle: (t: string) => void,
+    partitionKey: string,
+    deleteGameResult: (end: string) => void,
 };
 
 
@@ -32,6 +34,8 @@ export const Home: React.FC<HomeProps> = ({
     allGames,
     importGameResult,
     setTitle,
+    partitionKey,
+    deleteGameResult,
 }) => {
     
     useEffect(
@@ -94,6 +98,24 @@ export const Home: React.FC<HomeProps> = ({
     const openShareModal = (game: GameResult) => {
         setShareGame(game);
         shareModalRef.current?.showModal();
+    };
+
+    //
+    // Delete game state...
+    //
+    const [deleteGame, setDeleteGame] = useState<GameResult | null>(null);
+    const deleteModalRef = useRef<HTMLDialogElement>(null);
+
+    const openDeleteModal = (game: GameResult) => {
+        setDeleteGame(game);
+        deleteModalRef.current?.showModal();
+    };
+
+    const confirmDelete = () => {
+        if (deleteGame) {
+            deleteGameResult(deleteGame.end);
+        }
+        deleteModalRef.current?.close();
     };
 
     const openScanModal = () => {
@@ -534,15 +556,30 @@ export const Home: React.FC<HomeProps> = ({
                                                                             { formatRealGameDuration(x) }
                                                                         </span>
                                                                     ) }
-                                                                    <button
-                                                                        className="btn btn-ghost btn-xs btn-circle"
-                                                                        title="Share this game as a QR code"
-                                                                        onClick={() => openShareModal(x)}
-                                                                    >
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h18v18H3zM7 7h10v10H7z" />
-                                                                        </svg>
-                                                                    </button>
+                                                                    <div className="flex flex-row items-center gap-1">
+                                                                        <button
+                                                                            className="btn btn-ghost btn-xs btn-circle"
+                                                                            title="Share this game as a QR code"
+                                                                            onClick={() => openShareModal(x)}
+                                                                        >
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h18v18H3zM7 7h10v10H7z" />
+                                                                            </svg>
+                                                                        </button>
+                                                                        {
+                                                                            partitionKey.length > 0 && (
+                                                                                <button
+                                                                                    className="btn btn-ghost btn-xs btn-circle text-error"
+                                                                                    title="Delete this game"
+                                                                                    onClick={() => openDeleteModal(x)}
+                                                                                >
+                                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                                    </svg>
+                                                                                </button>
+                                                                            )
+                                                                        }
+                                                                    </div>
                                                                 </div>
                                                             </td>
                                                             <th style={{ verticalAlign: 'top' }}>
@@ -589,6 +626,39 @@ export const Home: React.FC<HomeProps> = ({
                     }
                 </div>
             </div>
+
+            <dialog ref={deleteModalRef} className="modal">
+                <div className="modal-box">
+                    <h3 className="font-bold text-xl mb-1">Delete Game</h3>
+                    <p className="opacity-60 mb-4 text-sm">
+                        {
+                            deleteGame && (
+                                <>
+                                    Delete the game from{' '}
+                                    <span className="font-semibold opacity-100 text-base-content">
+                                        { new Date(deleteGame.end).toLocaleDateString() }
+                                    </span>
+                                    ? This cannot be undone.
+                                </>
+                            )
+                        }
+                    </p>
+                    <div className="modal-action">
+                        <form method="dialog">
+                            <button className="btn btn-ghost">Cancel</button>
+                            <button
+                                className="btn btn-error"
+                                onClick={confirmDelete}
+                            >
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <form method="dialog" className="modal-backdrop">
+                    <button>close</button>
+                </form>
+            </dialog>
 
             <dialog ref={shareModalRef} className="modal">
                 <div className="modal-box">

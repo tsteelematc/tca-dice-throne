@@ -96,4 +96,33 @@ export const saveGameToCloud = async (
     return gameResults;    
   };
   
+  export const deleteGameFromCloud = async (
+    user: string
+    , app: string
+    , end: string
+  ) => {
+      
+    const trimmedLowercaseEmail = user
+      .trim()
+      .toLowerCase()
+    ;
+
+    // Bail if no email provided ! ! !
+    if (trimmedLowercaseEmail.length === 0) {
+      return;
+    }
+
+    // Use lowercase email since saveGameToCloud always saves with lowercase email ! ! !
+    const url = `https://32wop75hhc.execute-api.us-east-1.amazonaws.com/prod/data/?user=${trimmedLowercaseEmail}&app=${app}&end=${end}`;
+
+    const options = {
+      method: 'DELETE'
+    };
+
+    await fetch(
+      url
+      , options
+    );
+  };
+  
   
