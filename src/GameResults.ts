@@ -152,57 +152,34 @@ export const getAllGamesSorted = (
 );
 
 //
-// QR share/import helpers...
+// Combining games from multiple emails...
 //
-// Encode a game as a compact, pipe-delimited string so the QR code
-// stays low-version (less dense) and easier for a camera to decode.
-// Format: winner|start|end|name~hero,name~hero,...
-export const gameResultToQrPayload = (
+export const getGameKey = (
     game: GameResult
-): string => {
-    const players = game.players.map(
-        p => `${p.name}~${p.hero}`
-    ).join(",");
-    return [
-        game.winner,
-        game.start,
-        game.end,
-        players,
-    ].join("|");
-};
+): string => [
+    game.end,
+    game.winner,
+    game.players
+        .map(p => `${p.name}~${p.hero}`)
+        .sort()
+        .join(","),
+].join("|");
 
-export const gameResultFromQrPayload = (
-    payload: string
-): GameResult | null => {
-    try {
-        const parts = payload.split("|");
-        if (parts.length !== 4) {
-            return null;
+// Merge games from several emails, dropping duplicates (the same game
+// stored under more than one email).
+export const mergeGames = (
+    gamesLists: GameResult[][]
+): GameResult[] => {
+    const seen = new Set<string>();
+    const merged: GameResult[] = [];
+    for (const game of gamesLists.flat()) {
+        const key = getGameKey(game);
+        if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(game);
         }
-        const [winner, start, end, playersStr] = parts;
-        const players = playersStr.split(",").map(
-            pair => {
-                const [name, hero] = pair.split("~");
-                return { name, hero };
-            }
-        );
-        if (
-            typeof winner === "string"
-            && Array.isArray(players)
-            && typeof start === "string"
-            && typeof end === "string"
-        ) {
-            return {
-                winner,
-                players,
-                start,
-                end,
-            } as GameResult;
-        }
-        return null;
-    } catch {
-        return null;
     }
+    return merged;
 };
 
 export const getLeaderboard = (

@@ -65,7 +65,7 @@ export const saveGameToCloud = async (
   export const loadGamesFromCloud = async (
     email: string
     , appName: string
-  ) => {
+  ): Promise<GameResult[]> => {
       
     const trimmedLowercaseEmail = email
       .trim()
@@ -74,7 +74,7 @@ export const saveGameToCloud = async (
     
     // Bail if no email provided ! ! !
     if (trimmedLowercaseEmail.length === 0) {
-      return;
+      return [];
     }
 
     // Use lowercase email since saveGameToCloud always saves with lowercase email ! ! !

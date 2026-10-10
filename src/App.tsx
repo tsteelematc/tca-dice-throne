@@ -18,6 +18,8 @@ import {
   getPlayerHeroMatrix,
   getPreviousHeroes,
   getPreviousPlayers, 
+  getGameKey,
+  mergeGames,
   type GameResult,
   type Player, 
 } from './GameResults';
@@ -29,6 +31,8 @@ import {
 } from './tca-cloud-api';
 
 const DEFAULT_THEME = "light";
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 // Dev-only sample data, kept for local testing convenience (unused in prod).
 /* const dummyGameResults: GameResult[] = [
@@ -335,7 +339,7 @@ const App = () => {
   // React hooks, useState, useRef, useEffect...
   //
   // const [gameResults, setGameResults] = useState(dummyGameResults);
-  const [gameResults, setGameResults] = useState<GameResult[]>([]);
+  const [gamesByEmail, setGamesByEmail] = useState<Record<string, GameResult[]>>({});
 
   const [title, setTitle] = useState(APP_TITLE);
 
@@ -348,8 +352,42 @@ const App = () => {
 
   const [emailForCoudApi, setEmailForCloudApi] = useState("");
 
+  const [friends, setFriends] = useState<string[]>([]);
+  const [friendsInDialog, setFriendsInDialog] = useState<string[]>([]);
+  const [friendInput, setFriendInput] = useState("");
+
+  // null = just my games, "all" = me and every friend, otherwise the chosen emails.
+  const [selection, setSelection] = useState<string[] | "all" | null>(null);
 
   const emailDialog = useRef<HTMLDialogElement>(null);
+
+  const myEmail = normalizeEmail(emailForCoudApi);
+  const allEmails = [
+    ...(myEmail.length > 0 ? [myEmail] : []),
+    ...friends.filter(f => f !== myEmail),
+  ];
+  const viewedEmails = selection === "all"
+    ? allEmails
+    : (selection ?? []).filter(e => allEmails.includes(e))
+  ;
+  if (viewedEmails.length === 0 && myEmail.length > 0) {
+    viewedEmails.push(myEmail);
+  }
+
+  const gameResults = mergeGames(
+    viewedEmails.map(e => gamesByEmail[e] ?? [])
+  );
+
+  const myGameKeys = new Set(
+    (gamesByEmail[myEmail] ?? []).map(getGameKey)
+  );
+
+  const viewLabel = selection === "all"
+    ? "All"
+    : viewedEmails.length === 1 && viewedEmails[0] === myEmail
+      ? ""
+      : `${viewedEmails.length} emails`
+  ;
 
   useEffect(
     () => {
@@ -377,10 +415,15 @@ const App = () => {
       const loadEmail = async () => {
 
         const result = await localforage.getItem<string>("email") ?? "";
+        const savedFriends = await localforage.getItem<string[]>("friends") ?? [];
+        const savedSelection = await localforage.getItem<string[] | "all">("selectedEmails");
 
         if (!ignore) {
           setEmailInDialog(result);
           setEmailForCloudApi(result);
+          setFriends(savedFriends);
+          setFriendsInDialog(savedFriends);
+          setSelection(savedSelection ?? null);
         }
       }
 
@@ -394,31 +437,39 @@ const App = () => {
     [],
   );  
 
+  const emailsToLoad = allEmails.join(",");
+
   useEffect(
     () => {
-      const loadGames = async () => {
+      const loadGames = async (email: string) => {
+        try {
+          const games = await loadGamesFromCloud(
+            email,
+            "tca-dice-throne-26s"
+          );
 
-        const games = await loadGamesFromCloud(
-          emailForCoudApi,
-          "tca-dice-throne-26s"
-        );
-
-        if (!ignore) {
-          setGameResults(games);
+          if (!ignore) {
+            setGamesByEmail(
+              prev => ({ ...prev, [email]: games })
+            );
+          }
+        }
+        catch (e) {
+          console.error("Could not load games for", email, e);
         }
       }
 
       let ignore = false;
 
-      if (emailForCoudApi.length > 0) {
-        loadGames();
+      if (emailsToLoad.length > 0) {
+        emailsToLoad.split(",").forEach(loadGames);
       }
 
       return () => {
         ignore = true;
       }
     }, 
-    [emailForCoudApi],
+    [emailsToLoad],
   );  
 
   //
@@ -426,7 +477,7 @@ const App = () => {
   //
   const addNewGameResult = async (gameResult: GameResult) => {
     // First, save the game result to the cloud...
-    if (emailForCoudApi.length > 0) {
+    if (myEmail.length > 0) {
       await saveGameToCloud(
         emailForCoudApi,
         "tca-dice-throne-26s",
@@ -440,35 +491,68 @@ const App = () => {
     //
     // Assume it was correctly saved to the cloud above : - /
     //
-    setGameResults(
-      [
-        ...gameResults,
-        gameResult,
-      ]
+    setGamesByEmail(
+      prev => ({
+        ...prev,
+        [myEmail]: [...(prev[myEmail] ?? []), gameResult],
+      })
     );
   }
 
   //
-  // Import a game result (e.g. from a scanned QR code)...
+  // Copy a friend's game to my email...
   //
-  const importGameResult = async (gameResult: GameResult) => {
-    // Save to the cloud if an email is configured...
-    if (emailForCoudApi.length > 0) {
-      await saveGameToCloud(
-        emailForCoudApi,
-        "tca-dice-throne-26s",
-        gameResult.end,
-        gameResult,
-      );
+  const canCopyToMine = (gameResult: GameResult) => 
+    myEmail.length > 0 && !myGameKeys.has(getGameKey(gameResult))
+  ;
+
+  const copyGameToMine = async (gameResult: GameResult) => {
+    if (!canCopyToMine(gameResult)) {
+      return;
     }
 
-    // Optimistically update local state...
-    setGameResults(
-      [
-        ...gameResults,
-        gameResult,
-      ]
+    await saveGameToCloud(
+      emailForCoudApi,
+      "tca-dice-throne-26s",
+      gameResult.end,
+      gameResult,
     );
+
+    setGamesByEmail(
+      prev => ({
+        ...prev,
+        [myEmail]: [...(prev[myEmail] ?? []), gameResult],
+      })
+    );
+  }
+
+  const saveSelection = async (value: string[] | "all" | null) => {
+    setSelection(value);
+    await localforage.setItem("selectedEmails", value);
+  }
+
+  const toggleEmail = (email: string) => {
+    const current = selection === "all"
+      ? allEmails
+      : viewedEmails
+    ;
+    const next = current.includes(email)
+      ? current.filter(e => e !== email)
+      : [...current, email]
+    ;
+    saveSelection(next.length === 0 ? null : next);
+  }
+
+  const addFriendInDialog = () => {
+    const friend = normalizeEmail(friendInput);
+    if (
+      friend.length > 0 
+      && friend !== normalizeEmail(emailInDialog)
+      && !friendsInDialog.includes(friend)
+    ) {
+      setFriendsInDialog([...friendsInDialog, friend]);
+    }
+    setFriendInput("");
   }
 
   //
@@ -480,7 +564,7 @@ const App = () => {
       data-theme={ theme }
     >
       <div 
-        className="navbar bg-neutral text-neutral-content overflow-x-hidden flex flex-row"
+        className="navbar bg-neutral text-neutral-content flex flex-row relative z-20"
       >
         <p
           className='text-xl font-bold text-nowrap'
@@ -492,6 +576,11 @@ const App = () => {
         <div 
           className="ml-auto flex flex-row"
         >
+          <div className="dropdown dropdown-end !static">
+          <div tabIndex={0} role="button" className="flex flex-row items-center cursor-pointer">
+          { viewLabel.length > 0 && (
+            <span className="badge badge-sm badge-warning mr-1">{ viewLabel }</span>
+          ) }
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
             fill="none" 
@@ -499,13 +588,62 @@ const App = () => {
             strokeWidth={2} 
             stroke="currentColor" 
             className="size-7"
-            onClick={
-              () => emailDialog.current?.showModal()
-            }
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
           </svg>
+                      </div>
+                      <ul
+                        tabIndex={0}
+                        className="dropdown-content menu bg-base-100 text-base-content rounded-box z-10 !left-0 !right-0 !top-full w-full p-2 shadow flex-nowrap overflow-hidden"
+                      >
+                        <li>
+                          <label className="flex flex-row gap-2">
+                            <input
+                              type="checkbox"
+                              className="checkbox checkbox-sm"
+                              checked={selection === "all"}
+                              onChange={
+                                () => saveSelection(selection === "all" ? null : "all")
+                              }
+                            />
+                            All
+                          </label>
+                        </li>
+                        {
+                          allEmails.map(
+                            e => (
+                              <li key={e}>
+                                <label className="flex flex-row flex-nowrap gap-2 min-w-0">
+                                  <input
+                                    type="checkbox"
+                                    className="checkbox checkbox-sm shrink-0"
+                                    checked={viewedEmails.includes(e)}
+                                    onChange={() => toggleEmail(e)}
+                                  />
+                                  <span className="truncate min-w-0 flex-1">
+                                    { e === myEmail ? `Me (${e})` : e }
+                                  </span>
+                                </label>
+                              </li>
+                            )
+                          )
+                        }
+                        <li className="border-t border-base-300 mt-1 pt-1">
+                          <a
+                            onClick={
+                              () => {
+                                (document.activeElement as HTMLElement | null)?.blur();
+                                setFriendsInDialog(friends);
+                                emailDialog.current?.showModal();
+                              }
+                            }
+                          >
+                            Edit...
+                          </a>
+                        </li>
+                      </ul>
+                      </div>
           <label 
             className="swap swap-rotate ml-3"
           >
@@ -585,7 +723,8 @@ const App = () => {
                   allGames={
                     getAllGamesSorted(gameResults)
                   }
-                  importGameResult={importGameResult}
+                  canCopyToMine={canCopyToMine}
+                  copyGameToMine={copyGameToMine}
                 />
               }
             />
@@ -636,6 +775,55 @@ const App = () => {
               }
             />
 
+            <h3 className="font-bold text-lg mt-4">Friends' email addresses</h3>
+            <ul className="mt-2">
+              {
+                friendsInDialog.map(
+                  f => (
+                    <li key={f} className="flex flex-row items-center justify-between">
+                      <span className="truncate min-w-0 flex-1">{ f }</span>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        title="Remove friend"
+                        onClick={
+                          () => setFriendsInDialog(
+                            friendsInDialog.filter(x => x !== f)
+                          )
+                        }
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  )
+                )
+              }
+            </ul>
+            <div className="flex flex-row gap-2 mt-2">
+              <input 
+                type="text"
+                placeholder="Add friend's email" 
+                className="input input-bordered w-full text-lg"
+                value={friendInput}
+                onChange={
+                  (e) => setFriendInput(e.target.value)
+                }
+                onKeyDown={
+                  (e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addFriendInDialog();
+                    }
+                  }
+                }
+              />
+              <button
+                className="btn btn-secondary"
+                onClick={addFriendInDialog}
+              >
+                Add
+              </button>
+            </div>
+
             <div className="modal-action">
               <form method="dialog">
                 {/* if there is a button in form, it will close the modal */}
@@ -647,6 +835,19 @@ const App = () => {
                         "email",
                         emailInDialog,
                       );
+
+                      // Include a friend typed but not yet added...
+                      const pending = normalizeEmail(friendInput);
+                      const nextFriends = (
+                        pending.length > 0 && !friendsInDialog.includes(pending)
+                          ? [...friendsInDialog, pending]
+                          : friendsInDialog
+                      ).filter(f => f !== normalizeEmail(savedEmail));
+                      setFriendInput("");
+
+                      await localforage.setItem("friends", nextFriends);
+                      setFriends(nextFriends);
+                      setFriendsInDialog(nextFriends);
 
                       if (savedEmail.length > 0) {
                         setEmailForCloudApi(savedEmail);
