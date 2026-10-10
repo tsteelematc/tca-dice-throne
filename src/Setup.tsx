@@ -395,9 +395,15 @@ export const Setup: React.FC<SetupProps> = ({
                             Add
                         </button>
                     </div>
-                    <div className="card bg-base-100 shadow mb-4">
-                        <div className="card-body p-3 gap-2">
-                            <h3 className="font-bold">Spin for a Hero ↻</h3>
+                    <details className="group card bg-base-100 shadow mb-4">
+                        <summary className="cursor-pointer select-none p-3 font-bold list-none flex items-center justify-between [&::-webkit-details-marker]:hidden">
+                            <span>Spin for a Hero ↻</span>
+                            <span className="text-base-content/60 text-xl leading-none">
+                                <span className="group-open:hidden">+</span>
+                                <span className="hidden group-open:inline">−</span>
+                            </span>
+                        </summary>
+                        <div className="card-body p-3 pt-0 gap-2">
                             <input
                                 type="text"
                                 className="input input-sm w-full"
@@ -421,10 +427,10 @@ export const Setup: React.FC<SetupProps> = ({
                                             Use
                                         </button>
                                         <button
-                                            className="btn flex-1"
+                                            className="btn flex-[2]"
                                             onClick={spin}
                                         >
-                                            Spin Again
+                                            Spin ({spinPool.length}) Again
                                         </button>
                                     </div>
                                 ) : (
@@ -438,7 +444,7 @@ export const Setup: React.FC<SetupProps> = ({
                                 )
                             }
                         </div>
-                    </div>
+                    </details>
                     {
                         availableHeroes.map(
                             x => (
