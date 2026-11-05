@@ -165,7 +165,7 @@ export const Setup: React.FC<SetupProps> = ({
     // Then return JSX...
     //
     return (
-        <div className="drawer drawer-end">
+        <div className="drawer drawer-end hero-drawer">
             <input 
                 id="hero-drawer" 
                 type="checkbox" 

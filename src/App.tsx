@@ -564,7 +564,7 @@ const App = () => {
       data-theme={ theme }
     >
       <div 
-        className="navbar bg-neutral text-neutral-content flex flex-row relative z-20"
+        className="navbar h-16 min-h-16 bg-neutral text-neutral-content flex flex-row relative z-20"
       >
         <p
           className='text-xl font-bold text-nowrap'

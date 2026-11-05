@@ -22,6 +22,25 @@
     border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
 
+.hero-drawer .drawer-side {
+    top: 0;
+    height: 100dvh;
+    z-index: 30;
+}
+
+.hero-drawer .drawer-side > .menu {
+    align-self: end;
+    height: calc(100dvh - 4rem);
+    min-height: 0;
+    flex-wrap: nowrap;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.hero-drawer .drawer-side > .menu > * {
+    flex-shrink: 0;
+}
+
 [data-theme] .card {
     box-shadow: 0 20px 44px -28px color-mix(in srgb, var(--color-neutral) 60%, transparent);
 }
