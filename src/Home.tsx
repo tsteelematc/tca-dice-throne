@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell, AverageDurationEntry } from "./GameResults";
+import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell, AverageDurationEntry, WinningStreakEntry, WinningStreakGame } from "./GameResults";
 import { formatRealGameDuration } from "./GameResults";
 import { useEffect, useRef, useState } from "react";
 
@@ -13,6 +13,9 @@ type HomeProps = {
     playerHeroMatrix: PlayerHeroMatrix,
     playerAverageDurations: AverageDurationEntry[],
     heroAverageDurations: AverageDurationEntry[],
+    playerWinningStreaks: WinningStreakEntry[],
+    heroWinningStreaks: WinningStreakEntry[],
+    playerHeroWinningStreaks: WinningStreakEntry[],
     allGames: GameResult[],
     canCopyToMine: (g: GameResult) => boolean,
     copyGameToMine: (g: GameResult) => void,
@@ -28,6 +31,9 @@ export const Home: React.FC<HomeProps> = ({
     playerHeroMatrix,
     playerAverageDurations,
     heroAverageDurations,
+    playerWinningStreaks,
+    heroWinningStreaks,
+    playerHeroWinningStreaks,
     allGames,
     canCopyToMine,
     copyGameToMine,
@@ -44,6 +50,11 @@ export const Home: React.FC<HomeProps> = ({
     const [selectedCell, setSelectedCell] = useState<PlayerHeroCell | null>(null);
 
     const [hl, setHl] = useState<{ kind: 'player' | 'hero', name: string } | null>(null);
+    const [selectedStreak, setSelectedStreak] = useState<{
+        name: string,
+        label: string,
+        games: WinningStreakGame[],
+    } | null>(null);
 
     const toggleHighlight = (kind: 'player' | 'hero', name: string) => setHl(
         hl?.kind === kind && hl.name === name ? null : { kind, name }
@@ -72,11 +83,26 @@ export const Home: React.FC<HomeProps> = ({
         : undefined
     ;
     const heatmapModalRef = useRef<HTMLDialogElement>(null);
-
+    const streakModalRef = useRef<HTMLDialogElement>(null);
     const openHeatmapCell = (cell: PlayerHeroCell) => {
         setSelectedCell(cell);
         heatmapModalRef.current?.showModal();
     };
+
+    const openStreakDetails = (
+        name: string,
+        label: string,
+        games: WinningStreakGame[],
+    ) => {
+        setSelectedStreak({ name, label, games });
+        streakModalRef.current?.showModal();
+    };
+
+    const winningStreakCards = [
+        { title: "Player Winning Streaks", label: "PLAYER", kind: "player" as const, entries: playerWinningStreaks },
+        { title: "Hero Winning Streaks", label: "HERO", kind: "hero" as const, entries: heroWinningStreaks },
+        { title: "Player + Hero Winning Streaks", label: "PLAYER (HERO)", kind: "playerHero" as const, entries: playerHeroWinningStreaks },
+    ];
 
     // Then return JSX...
     return (
@@ -369,6 +395,89 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
             </div>
 
+            {winningStreakCards.map(card => (
+                <div key={card.title} className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+                    <div className="card-body p-2">
+                        <h2 className="card-title text-nowrap ml-3">
+                            {card.title}
+                        </h2>
+                        {card.entries.length === 0 ? (
+                            <p className="ml-3">N/A</p>
+                        ) : (
+                            <table className="table table-zebra">
+                                <thead>
+                                    <tr>
+                                        <th>{card.label}</th>
+                                        <th>LONGEST</th>
+                                        <th>CURRENT</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {card.entries.map(x => {
+                                        const isHighlighted = card.kind === 'player'
+                                            ? hl?.kind === 'player' && hl.name === x.name
+                                            : card.kind === 'hero'
+                                                ? hl?.kind === 'hero' && hl.name === x.name
+                                                : hl?.kind === 'player'
+                                                    ? x.name.startsWith(`${hl.name} (`)
+                                                    : hl?.kind === 'hero' && x.name.endsWith(`(${hl.name})`);
+                                        const onRowClick = card.kind === 'player'
+                                            ? () => toggleHighlight('player', x.name)
+                                            : card.kind === 'hero'
+                                                ? () => toggleHighlight('hero', x.name)
+                                                : undefined;
+                                        return (
+                                            <tr
+                                                key={x.name}
+                                                className={onRowClick ? "cursor-pointer" : undefined}
+                                                style={rowStyle(isHighlighted)}
+                                                onClick={onRowClick}
+                                            >
+                                                <th>{x.name}</th>
+                                                <td>
+                                                    <div className="flex items-center gap-1">
+                                                        {x.longestStreak}
+                                                        <button
+                                                            className="inline-flex h-3 w-3 min-h-0 min-w-0 items-center justify-center rounded-full border border-current p-0 text-[8px] leading-none text-base-content/60 hover:text-base-content"
+                                                            aria-label={`View longest streak details for ${x.name}`}
+                                                            title="View longest streak details"
+                                                            onClick={event => {
+                                                                event.stopPropagation();
+                                                                openStreakDetails(x.name, 'Longest', x.longestStreakGames);
+                                                            }}
+                                                        >
+                                                            i
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div className="flex items-center gap-1">
+                                                        {x.currentStreak}
+                                                        {x.currentStreak > 0 && (
+                                                            <button
+                                                                className="inline-flex h-3 w-3 min-h-0 min-w-0 items-center justify-center rounded-full border border-current p-0 text-[8px] leading-none text-base-content/60 hover:text-base-content"
+                                                                aria-label={`View current streak details for ${x.name}`}
+                                                                title="View current streak details"
+                                                                onClick={event => {
+                                                                    event.stopPropagation();
+                                                                    openStreakDetails(x.name, 'Current', x.currentStreakGames);
+                                                                }}
+                                                            >
+                                                                i
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </div>
+            ))}
+
             {[
                 { title: "Slow Players?", label: "PLAYER", entries: playerAverageDurations },
                 { title: "Slow Heroes?", label: "HERO", entries: heroAverageDurations },
@@ -556,7 +665,36 @@ export const Home: React.FC<HomeProps> = ({
                 </form>
             </dialog>
 
-
+            <dialog ref={streakModalRef} className="modal">
+                <div className="modal-box">
+                    {selectedStreak && (
+                        <>
+                            <h3 className="font-bold text-xl mb-1">
+                                {selectedStreak.label} streak: {selectedStreak.name}
+                            </h3>
+                            <p className="opacity-60 mb-4 text-sm">
+                                {selectedStreak.games.length} consecutive wins
+                            </p>
+                            <ul className="divide-y divide-base-300">
+                                {selectedStreak.games.map((game, index) => (
+                                    <li key={`${game.date}-${index}`} className="flex justify-between gap-4 py-2">
+                                        <span>{new Date(game.date).toLocaleDateString()}</span>
+                                        <span className="opacity-70">{game.player} ({game.hero})</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </>
+                    )}
+                    <div className="modal-action">
+                        <form method="dialog">
+                            <button className="btn btn-primary">Close</button>
+                        </form>
+                    </div>
+                </div>
+                <form method="dialog" className="modal-backdrop">
+                    <button>close</button>
+                </form>
+            </dialog>
 
         </>
     );

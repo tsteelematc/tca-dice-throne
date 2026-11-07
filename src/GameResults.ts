@@ -37,6 +37,20 @@ export type AverageDurationEntry = {
     avg: string;
 };
 
+export type WinningStreakEntry = {
+    name: string;
+    longestStreak: number;
+    currentStreak: number;
+    longestStreakGames: WinningStreakGame[];
+    currentStreakGames: WinningStreakGame[];
+};
+
+export type WinningStreakGame = {
+    date: string;
+    player: string;
+    hero: string;
+};
+
 // Games shorter than this are assumed to be data entry errors.
 export const MIN_REAL_GAME_MINUTES = 10;
 const MIN_REAL_GAME_MS = MIN_REAL_GAME_MINUTES * 60 * 1000;
@@ -144,6 +158,83 @@ export const getPlayerAverageDurations = (
 export const getHeroAverageDurations = (
     games: GameResult[]
 ): AverageDurationEntry[] => getAverageDurations(games, p => p.hero);
+
+const getWinningStreaks = (
+    games: GameResult[],
+    getKey: (player: Player) => string,
+    getName: (player: Player) => string,
+): WinningStreakEntry[] => {
+    const streaks = new Map<string, {
+        name: string,
+        longestGames: WinningStreakGame[],
+        currentGames: WinningStreakGame[],
+    }>();
+
+    [...games]
+        .sort((a, b) => Date.parse(a.end) - Date.parse(b.end))
+        .forEach(game => {
+            const winner = game.players.find(p => p.name === game.winner);
+            const winnerKey = winner ? getKey(winner) : null;
+            const participants = new Map(
+                game.players.map(player => [getKey(player), player])
+            );
+
+            participants.forEach((participant, key) => {
+                const stats = streaks.get(key) ?? {
+                    name: getName(participant),
+                    longestGames: [],
+                    currentGames: [],
+                };
+                streaks.set(key, stats);
+
+                if (key === winnerKey) {
+                    const winningParticipant = winner ?? participant;
+                    stats.currentGames.push({
+                        date: game.end,
+                        player: winningParticipant.name,
+                        hero: winningParticipant.hero,
+                    });
+                    if (stats.currentGames.length > stats.longestGames.length) {
+                        stats.longestGames = [...stats.currentGames];
+                    }
+                } else {
+                    stats.currentGames = [];
+                }
+            });
+        });
+
+    return [...streaks.values()]
+        .map(streak => ({
+            name: streak.name,
+            longestStreak: streak.longestGames.length,
+            currentStreak: streak.currentGames.length,
+            longestStreakGames: streak.longestGames,
+            currentStreakGames: streak.currentGames,
+        }))
+        .filter(x => x.longestStreak > 1)
+        .sort(
+            (a, b) =>
+                b.longestStreak - a.longestStreak
+                || b.currentStreak - a.currentStreak
+                || a.name.localeCompare(b.name)
+        );
+};
+
+export const getPlayerWinningStreaks = (
+    games: GameResult[]
+): WinningStreakEntry[] => getWinningStreaks(games, p => p.name, p => p.name);
+
+export const getHeroWinningStreaks = (
+    games: GameResult[]
+): WinningStreakEntry[] => getWinningStreaks(games, p => p.hero, p => p.hero);
+
+export const getPlayerHeroWinningStreaks = (
+    games: GameResult[]
+): WinningStreakEntry[] => getWinningStreaks(
+    games,
+    p => JSON.stringify([p.name, p.hero]),
+    p => `${p.name} (${p.hero})`,
+);
 
 export const getAllGamesSorted = (
     games: GameResult[]
