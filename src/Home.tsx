@@ -48,6 +48,7 @@ export const Home: React.FC<HomeProps> = ({
     const nav = useNavigate();
 
     const [selectedCell, setSelectedCell] = useState<PlayerHeroCell | null>(null);
+    const [funFactsNavOpen, setFunFactsNavOpen] = useState(false);
 
     const [hl, setHl] = useState<{ kind: 'player' | 'hero', name: string } | null>(null);
     const [selectedStreak, setSelectedStreak] = useState<{
@@ -99,10 +100,24 @@ export const Home: React.FC<HomeProps> = ({
     };
 
     const winningStreakCards = [
-        { title: "Player Winning Streaks", label: "PLAYER", kind: "player" as const, entries: playerWinningStreaks },
+        { id: "winning-streaks", title: "Player Winning Streaks", label: "PLAYER", kind: "player" as const, entries: playerWinningStreaks },
         { title: "Hero Winning Streaks", label: "HERO", kind: "hero" as const, entries: heroWinningStreaks },
         { title: "Player + Hero Winning Streaks", label: "PLAYER (HERO)", kind: "playerHero" as const, entries: playerHeroWinningStreaks },
     ];
+
+    const funFactsSections = [
+        { id: "general-facts", label: "General Facts" },
+        { id: "leaderboards", label: "Leaderboards" },
+        { id: "player-hero-matrix", label: "Player × Hero Matrix" },
+        { id: "winning-streaks", label: "Winning Streaks" },
+        { id: "slow-players", label: "Slow Players" },
+        { id: "all-games", label: "All Games" },
+    ];
+
+    const scrollToFunFactsSection = (id: string) => {
+        document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        setFunFactsNavOpen(false);
+    };
 
     // Then return JSX...
     return (
@@ -134,7 +149,7 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
             </section>
 
-            <div className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+            <div id="general-facts" className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                 <div className="card-body p-2">
                     <h2 
                         className="card-title text-nowrap ml-3"
@@ -167,7 +182,7 @@ export const Home: React.FC<HomeProps> = ({
                     </table>
                 </div>
             </div>          
-            <div className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+            <div id="leaderboards" className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                 <div className="card-body p-2">
                     <h2 
                         className="card-title text-nowrap ml-3"
@@ -327,7 +342,7 @@ export const Home: React.FC<HomeProps> = ({
                     }
                 </div>
             </div>       
-            <div className="card bg-base-100 w-full shadow-lg my-5">
+            <div id="player-hero-matrix" className="card bg-base-100 w-full shadow-lg my-5">
                 <div className="card-body p-2">
                     <h2 className="card-title text-nowrap ml-3">
                         Player × Hero Frequency
@@ -396,7 +411,7 @@ export const Home: React.FC<HomeProps> = ({
             </div>
 
             {winningStreakCards.map(card => (
-                <div key={card.title} className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+                <div key={card.title} id={card.id} className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                     <div className="card-body p-2">
                         <h2 className="card-title text-nowrap ml-3">
                             {card.title}
@@ -479,10 +494,10 @@ export const Home: React.FC<HomeProps> = ({
             ))}
 
             {[
-                { title: "Slow Players?", label: "PLAYER", entries: playerAverageDurations },
+                { id: "slow-players", title: "Slow Players?", label: "PLAYER", entries: playerAverageDurations },
                 { title: "Slow Heroes?", label: "HERO", entries: heroAverageDurations },
             ].map(card => (
-                <div key={card.title} className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+                <div key={card.title} id={card.id} className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                     <div className="card-body p-2">
                         <h2 className="card-title text-nowrap ml-3">
                             {card.title}
@@ -516,7 +531,7 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
             ))}
 
-            <div className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+            <div id="all-games" className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                 <div className="card-body p-2">
                     <div className="flex items-center gap-2">
                         <h2
@@ -696,6 +711,55 @@ export const Home: React.FC<HomeProps> = ({
                 </form>
             </dialog>
 
+            <nav
+                className="fun-facts-nav"
+                aria-label="Fun facts navigation"
+                onKeyDown={event => {
+                    if (event.key === "Escape") {
+                        setFunFactsNavOpen(false);
+                    }
+                }}
+            >
+                <div
+                    id="fun-facts-nav-menu"
+                    className="fun-facts-nav-menu"
+                    hidden={!funFactsNavOpen}
+                >
+                    <div className="fun-facts-nav-heading">Jump to fun facts</div>
+                    {funFactsSections.map((section, index) => (
+                        <button
+                            key={section.id}
+                            type="button"
+                            className="btn btn-sm fun-facts-nav-item"
+                            onClick={() => scrollToFunFactsSection(section.id)}
+                        >
+                            <span className="badge badge-sm fun-facts-nav-number">
+                                {index + 1}
+                            </span>
+                            {section.label}
+                        </button>
+                    ))}
+                </div>
+                <button
+                    type="button"
+                    className="btn btn-primary btn-circle shadow-lg"
+                    aria-label={funFactsNavOpen ? "Close fun facts navigation" : "Open fun facts navigation"}
+                    aria-expanded={funFactsNavOpen}
+                    aria-controls="fun-facts-nav-menu"
+                    title="Fun facts navigation"
+                    onClick={() => setFunFactsNavOpen(open => !open)}
+                >
+                    {funFactsNavOpen ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 5.25h16.5m-16.5 6h16.5m-16.5 6h16.5" />
+                        </svg>
+                    )}
+                </button>
+            </nav>
         </>
     );
 };
