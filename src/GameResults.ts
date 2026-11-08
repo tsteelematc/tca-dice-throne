@@ -47,8 +47,8 @@ export type WinningStreakEntry = {
 
 export type WinningStreakGame = {
     date: string;
-    player: string;
-    hero: string;
+    winner: Player;
+    loser: Player | null;
 };
 
 // Games shorter than this are assumed to be data entry errors.
@@ -189,10 +189,13 @@ const getWinningStreaks = (
 
                 if (key === winnerKey) {
                     const winningParticipant = winner ?? participant;
+                    const losingParticipant = game.players.find(
+                        player => player !== winningParticipant
+                    ) ?? null;
                     stats.currentGames.push({
                         date: game.end,
-                        player: winningParticipant.name,
-                        hero: winningParticipant.hero,
+                        winner: winningParticipant,
+                        loser: losingParticipant,
                     });
                     if (stats.currentGames.length > stats.longestGames.length) {
                         stats.longestGames = [...stats.currentGames];
