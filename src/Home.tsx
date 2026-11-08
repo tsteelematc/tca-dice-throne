@@ -681,7 +681,7 @@ export const Home: React.FC<HomeProps> = ({
             </dialog>
 
             <dialog ref={streakModalRef} className="modal">
-                <div className="modal-box">
+                <div className="modal-box w-[calc(100%-1rem)] max-w-3xl">
                     {selectedStreak && (
                         <>
                             <h3 className="font-bold text-xl mb-1">
@@ -690,14 +690,37 @@ export const Home: React.FC<HomeProps> = ({
                             <p className="opacity-60 mb-4 text-sm">
                                 {selectedStreak.games.length} consecutive wins
                             </p>
-                            <ul className="divide-y divide-base-300">
-                                {selectedStreak.games.map((game, index) => (
-                                    <li key={`${game.date}-${index}`} className="flex justify-between gap-4 py-2">
-                                        <span>{new Date(game.date).toLocaleDateString()}</span>
-                                        <span className="opacity-70">{game.player} ({game.hero})</span>
-                                    </li>
-                                ))}
-                            </ul>
+                            <table className="table table-xs w-full table-fixed">
+                                <colgroup>
+                                    <col className="w-28" />
+                                    <col />
+                                    <col />
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Winner</th>
+                                        <th>Loser</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {selectedStreak.games.map((game, index) => (
+                                        <tr key={`${game.date}-${index}`}>
+                                            <td className="whitespace-nowrap">
+                                                {new Date(game.date).toLocaleDateString()}
+                                            </td>
+                                            <td className="break-words">
+                                                {game.winner.name} ({game.winner.hero})
+                                            </td>
+                                            <td className="break-words">
+                                                {game.loser
+                                                    ? `${game.loser.name} (${game.loser.hero})`
+                                                    : "Unknown"}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </>
                     )}
                     <div className="modal-action">
