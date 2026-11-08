@@ -416,6 +416,7 @@ export const Home: React.FC<HomeProps> = ({
                         <h2 className="card-title text-nowrap ml-3">
                             {card.title}
                         </h2>
+                        {card.kind !== 'playerHero' && highlightChip(card.kind)}
                         {card.entries.length === 0 ? (
                             <p className="ml-3">N/A</p>
                         ) : (
@@ -450,35 +451,35 @@ export const Home: React.FC<HomeProps> = ({
                                             >
                                                 <th>{x.name}</th>
                                                 <td>
-                                                    <div className="flex items-center gap-1">
+                                                    <div className="flex items-center gap-2">
                                                         {x.longestStreak}
                                                         <button
-                                                            className="inline-flex h-3 w-3 min-h-0 min-w-0 items-center justify-center rounded-full border border-current p-0 text-[8px] leading-none text-base-content/60 hover:text-base-content"
+                                                            className="btn btn-ghost btn-xs relative top-0.5 h-5 min-h-0 px-1.5 text-[10px] leading-none"
                                                             aria-label={`View longest streak details for ${x.name}`}
-                                                            title="View longest streak details"
+                                                            title="View longest streak games"
                                                             onClick={event => {
                                                                 event.stopPropagation();
                                                                 openStreakDetails(x.name, 'Longest', x.longestStreakGames);
                                                             }}
                                                         >
-                                                            i
+                                                            Details
                                                         </button>
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <div className="flex items-center gap-1">
+                                                    <div className="flex items-center gap-2">
                                                         {x.currentStreak}
                                                         {x.currentStreak > 0 && (
                                                             <button
-                                                                className="inline-flex h-3 w-3 min-h-0 min-w-0 items-center justify-center rounded-full border border-current p-0 text-[8px] leading-none text-base-content/60 hover:text-base-content"
+                                                                className="btn btn-ghost btn-xs relative top-0.5 h-5 min-h-0 px-1.5 text-[10px] leading-none"
                                                                 aria-label={`View current streak details for ${x.name}`}
-                                                                title="View current streak details"
+                                                                title="View current streak games"
                                                                 onClick={event => {
                                                                     event.stopPropagation();
                                                                     openStreakDetails(x.name, 'Current', x.currentStreakGames);
                                                                 }}
                                                             >
-                                                                i
+                                                                Details
                                                             </button>
                                                         )}
                                                     </div>
