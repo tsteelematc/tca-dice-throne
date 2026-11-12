@@ -38,7 +38,7 @@ export type AverageDurationEntry = {
 };
 
 // Games shorter than this are assumed to be data entry errors.
-export const MIN_REAL_GAME_MINUTES = 10;
+export const MIN_REAL_GAME_MINUTES = 0;
 const MIN_REAL_GAME_MS = MIN_REAL_GAME_MINUTES * 60 * 1000;
 
 const getGameDurationMs = (game: GameResult): number =>
