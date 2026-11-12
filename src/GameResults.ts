@@ -43,6 +43,7 @@ export type WinningStreakEntry = {
     currentStreak: number;
     longestStreakGames: WinningStreakGame[];
     currentStreakGames: WinningStreakGame[];
+    longestStreakBreaker: WinningStreakGame | null;
 };
 
 export type WinningStreakGame = {
@@ -168,6 +169,7 @@ const getWinningStreaks = (
         name: string,
         longestGames: WinningStreakGame[],
         currentGames: WinningStreakGame[],
+        longestBreaker: WinningStreakGame | null,
     }>();
 
     [...games]
@@ -184,6 +186,7 @@ const getWinningStreaks = (
                     name: getName(participant),
                     longestGames: [],
                     currentGames: [],
+                    longestBreaker: null,
                 };
                 streaks.set(key, stats);
 
@@ -199,8 +202,21 @@ const getWinningStreaks = (
                     });
                     if (stats.currentGames.length > stats.longestGames.length) {
                         stats.longestGames = [...stats.currentGames];
+                        stats.longestBreaker = null;
                     }
                 } else {
+                    if (
+                        stats.currentGames.length > 0
+                        && stats.currentGames.length === stats.longestGames.length
+                    ) {
+                        stats.longestBreaker = winner
+                            ? {
+                                date: game.end,
+                                winner,
+                                loser: participant,
+                            }
+                            : null;
+                    }
                     stats.currentGames = [];
                 }
             });
@@ -213,6 +229,7 @@ const getWinningStreaks = (
             currentStreak: streak.currentGames.length,
             longestStreakGames: streak.longestGames,
             currentStreakGames: streak.currentGames,
+            longestStreakBreaker: streak.longestBreaker,
         }))
         .filter(x => x.longestStreak > 1)
         .sort(

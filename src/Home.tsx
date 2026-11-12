@@ -55,6 +55,7 @@ export const Home: React.FC<HomeProps> = ({
         name: string,
         label: string,
         games: WinningStreakGame[],
+        breaker: WinningStreakGame | null,
     } | null>(null);
 
     const toggleHighlight = (kind: 'player' | 'hero', name: string) => setHl(
@@ -94,8 +95,9 @@ export const Home: React.FC<HomeProps> = ({
         name: string,
         label: string,
         games: WinningStreakGame[],
+        breaker: WinningStreakGame | null,
     ) => {
-        setSelectedStreak({ name, label, games });
+        setSelectedStreak({ name, label, games, breaker });
         streakModalRef.current?.showModal();
     };
 
@@ -459,7 +461,12 @@ export const Home: React.FC<HomeProps> = ({
                                                             title="View longest streak games"
                                                             onClick={event => {
                                                                 event.stopPropagation();
-                                                                openStreakDetails(x.name, 'Longest', x.longestStreakGames);
+                                                                openStreakDetails(
+                                                                    x.name,
+                                                                    'Longest',
+                                                                    x.longestStreakGames,
+                                                                    x.longestStreakBreaker,
+                                                                );
                                                             }}
                                                         >
                                                             Details
@@ -476,7 +483,12 @@ export const Home: React.FC<HomeProps> = ({
                                                                 title="View current streak games"
                                                                 onClick={event => {
                                                                     event.stopPropagation();
-                                                                    openStreakDetails(x.name, 'Current', x.currentStreakGames);
+                                                                    openStreakDetails(
+                                                                        x.name,
+                                                                        'Current',
+                                                                        x.currentStreakGames,
+                                                                        null,
+                                                                    );
                                                                 }}
                                                             >
                                                                 Details
@@ -722,6 +734,20 @@ export const Home: React.FC<HomeProps> = ({
                                     ))}
                                 </tbody>
                             </table>
+                            {selectedStreak.breaker && (
+                                <div className="mt-4 rounded-xl border-2 border-accent/40 bg-accent/10 p-4 shadow-inner">
+                                    <div className="text-xs font-bold uppercase tracking-widest text-accent">
+                                        Streak broken
+                                    </div>
+                                    <p className="mt-1 text-lg font-bold">
+                                        {selectedStreak.breaker.winner.name} ({selectedStreak.breaker.winner.hero})
+                                    </p>
+                                    <p className="text-sm opacity-70">
+                                        Ended this run on{' '}
+                                        {new Date(selectedStreak.breaker.date).toLocaleDateString()}
+                                    </p>
+                                </div>
+                            )}
                         </>
                     )}
                     <div className="modal-action">
