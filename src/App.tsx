@@ -20,6 +20,7 @@ import {
   getPreviousPlayers, 
   getGameKey,
   mergeGames,
+  getWinStreakStats,
   type GameResult,
   type Player, 
 } from './GameResults';
@@ -719,6 +720,9 @@ const App = () => {
                   }
                   heroAverageDurations={
                     getHeroAverageDurations(gameResults)
+                  }
+                  winStreakStats={
+                    getWinStreakStats(gameResults)
                   }
                   allGames={
                     getAllGamesSorted(gameResults)

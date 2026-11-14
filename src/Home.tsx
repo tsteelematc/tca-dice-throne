@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell, AverageDurationEntry } from "./GameResults";
+import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell, AverageDurationEntry, WinStreakStats } from "./GameResults";
 import { formatRealGameDuration } from "./GameResults";
 import { useEffect, useRef, useState } from "react";
 
@@ -13,6 +13,7 @@ type HomeProps = {
     playerHeroMatrix: PlayerHeroMatrix,
     playerAverageDurations: AverageDurationEntry[],
     heroAverageDurations: AverageDurationEntry[],
+    winStreakStats: WinStreakStats,
     allGames: GameResult[],
     canCopyToMine: (g: GameResult) => boolean,
     copyGameToMine: (g: GameResult) => void,
@@ -28,6 +29,7 @@ export const Home: React.FC<HomeProps> = ({
     playerHeroMatrix,
     playerAverageDurations,
     heroAverageDurations,
+    winStreakStats,
     allGames,
     canCopyToMine,
     copyGameToMine,
@@ -72,6 +74,7 @@ export const Home: React.FC<HomeProps> = ({
         : undefined
     ;
     const heatmapModalRef = useRef<HTMLDialogElement>(null);
+    const streakModalRef = useRef<HTMLDialogElement>(null);
 
     const openHeatmapCell = (cell: PlayerHeroCell) => {
         setSelectedCell(cell);
@@ -141,6 +144,46 @@ export const Home: React.FC<HomeProps> = ({
                     </table>
                 </div>
             </div>          
+            <div className="card bg-base-100 w-full shadow-lg my-5">
+                <div className="card-body p-3 sm:p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <h2 className="card-title">Win Streaks</h2>
+                        <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => streakModalRef.current?.showModal()}
+                        >
+                            Streak history
+                        </button>
+                    </div>
+                    <p className="text-xs opacity-60">
+                        Only runs of 2+ wins count; sitting out does not break a streak.
+                    </p>
+                    {winStreakStats.leaderboard.length === 0 ? (
+                        <p className="ml-1">N/A</p>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>PLAYER</th>
+                                        <th>CURRENT</th>
+                                        <th>LONGEST</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {winStreakStats.leaderboard.map(entry => (
+                                        <tr key={entry.name}>
+                                            <th>{entry.name}</th>
+                                            <td>{entry.activeWins}</td>
+                                            <td>{entry.longestWins}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
             <div className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                 <div className="card-body p-2">
                     <h2 
@@ -556,6 +599,56 @@ export const Home: React.FC<HomeProps> = ({
                 </form>
             </dialog>
 
+            <dialog ref={streakModalRef} className="modal modal-bottom sm:modal-middle">
+                <div className="modal-box max-h-[85vh] max-w-3xl overflow-y-auto">
+                    <h3 className="font-bold text-xl mb-1">Win Streak History</h3>
+                    <p className="text-sm opacity-60 mb-4">
+                        Showing runs of at least two consecutive wins. “Ended by” is the winner of the game that stopped the streak.
+                    </p>
+                    {winStreakStats.records.length === 0 ? (
+                        <p className="text-sm opacity-60">No streaks of two or more wins yet.</p>
+                    ) : (
+                        <div className="max-h-[60vh] overflow-auto">
+                            <table className="table table-zebra table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>PLAYER</th>
+                                        <th>WINS</th>
+                                        <th>STARTED</th>
+                                        <th>ENDED</th>
+                                        <th>ENDED BY</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {winStreakStats.records.map((record, index) => (
+                                        <tr key={`${record.name}-${record.start}-${index}`}>
+                                            <th>{record.name}</th>
+                                            <td>{record.wins}</td>
+                                            <td className="text-nowrap">{new Date(record.start).toLocaleDateString()}</td>
+                                            <td className="text-nowrap">
+                                                {record.active
+                                                    ? "Active"
+                                                    : record.endedAt
+                                                        ? new Date(record.endedAt).toLocaleDateString()
+                                                        : "—"}
+                                            </td>
+                                            <td>{record.endedBy ?? "—"}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                    <div className="modal-action">
+                        <form method="dialog">
+                            <button className="btn btn-primary">Close</button>
+                        </form>
+                    </div>
+                </div>
+                <form method="dialog" className="modal-backdrop">
+                    <button>close</button>
+                </form>
+            </dialog>
 
 
         </>

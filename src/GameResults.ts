@@ -37,6 +37,27 @@ export type AverageDurationEntry = {
     avg: string;
 };
 
+export type WinStreakRecord = {
+    name: string;
+    wins: number;
+    start: string;
+    end: string;
+    endedAt: string | null;
+    endedBy: string | null;
+    active: boolean;
+};
+
+export type WinStreakEntry = {
+    name: string;
+    activeWins: number;
+    longestWins: number;
+};
+
+export type WinStreakStats = {
+    leaderboard: WinStreakEntry[];
+    records: WinStreakRecord[];
+};
+
 // Games shorter than this are assumed to be data entry errors.
 export const MIN_REAL_GAME_MINUTES = 0;
 const MIN_REAL_GAME_MS = MIN_REAL_GAME_MINUTES * 60 * 1000;
@@ -150,6 +171,78 @@ export const getAllGamesSorted = (
 ): GameResult[] => [...games].sort(
     (a, b) => Date.parse(b.end) - Date.parse(a.end)
 );
+
+export const getWinStreakStats = (games: GameResult[]): WinStreakStats => {
+    const chronologicalGames = [...games].sort(
+        (a, b) => Date.parse(a.end) - Date.parse(b.end)
+    );
+    const current = new Map<string, { wins: number; start: string; end: string }>();
+    const records: WinStreakRecord[] = [];
+
+    for (const game of chronologicalGames) {
+        for (const name of new Set(game.players.map(player => player.name))) {
+            const streak = current.get(name) ?? { wins: 0, start: game.end, end: game.end };
+
+            if (game.winner === name) {
+                current.set(name, {
+                    wins: streak.wins + 1,
+                    start: streak.wins === 0 ? game.end : streak.start,
+                    end: game.end,
+                });
+            } else if (streak.wins > 0) {
+                if (streak.wins >= 2) {
+                    records.push({
+                        name,
+                        wins: streak.wins,
+                        start: streak.start,
+                        end: streak.end,
+                        endedAt: game.end,
+                        endedBy: game.winner,
+                        active: false,
+                    });
+                }
+                current.set(name, { wins: 0, start: game.end, end: game.end });
+            }
+        }
+    }
+
+    for (const [name, streak] of current) {
+        if (streak.wins >= 2) {
+            records.push({
+                name,
+                ...streak,
+                endedAt: null,
+                endedBy: null,
+                active: true,
+            });
+        }
+    }
+
+    const players = getPreviousPlayers(games);
+    const leaderboard = players.map(name => {
+        const playerRecords = records.filter(record => record.name === name);
+        const longest = [...playerRecords].sort(
+            (a, b) => b.wins - a.wins || Date.parse(b.end) - Date.parse(a.end)
+        )[0];
+        const activeWins = playerRecords.find(record => record.active)?.wins ?? 0;
+
+        return {
+            name,
+            activeWins,
+            longestWins: longest?.wins ?? 0,
+        };
+    }).sort(
+        (a, b) => b.longestWins - a.longestWins
+            || b.activeWins - a.activeWins
+            || a.name.localeCompare(b.name)
+    );
+
+    const sortedRecords = [...records].sort(
+        (a, b) => Date.parse(b.end) - Date.parse(a.end)
+    );
+
+    return { leaderboard, records: sortedRecords };
+};
 
 //
 // Combining games from multiple emails...
