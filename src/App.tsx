@@ -16,6 +16,7 @@ import {
   getLeaderboard,
   getPlayerHeroLeaderboard,
   getPlayerHeroMatrix,
+  getWinStreaks,
   getPreviousHeroes,
   getPreviousPlayers, 
   getGameKey,
@@ -710,6 +711,9 @@ const App = () => {
                   }
                   playerHeroLeaderboard={
                     getPlayerHeroLeaderboard(gameResults)
+                  }
+                  winStreaks={
+                    getWinStreaks(gameResults)
                   }
                   playerHeroMatrix={
                     getPlayerHeroMatrix(gameResults)

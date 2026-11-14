@@ -37,6 +37,37 @@ export type AverageDurationEntry = {
     avg: string;
 };
 
+// A run of consecutive wins is only shown to the user as a "streak" once it
+// reaches this length — a single win isn't a streak yet.
+export const MIN_STREAK_LENGTH = 2;
+
+export type StreakGameWin = {
+    date: string;
+    hero: string;
+    beat: { name: string; hero: string }[];
+};
+
+export type StreakRun = {
+    length: number;
+    startDate: string;
+    endDate: string;
+    games: StreakGameWin[];
+    isActive: boolean;
+    endedBy: {
+        name: string;
+        hero: string;
+        date: string;
+    } | null;
+};
+
+export type WinStreakEntry = {
+    name: string;
+    active: number;
+    longest: number;
+    activeStreak: StreakRun | null;
+    longestStreak: StreakRun | null;
+};
+
 // Games shorter than this are assumed to be data entry errors.
 export const MIN_REAL_GAME_MINUTES = 0;
 const MIN_REAL_GAME_MS = MIN_REAL_GAME_MINUTES * 60 * 1000;
@@ -221,6 +252,25 @@ export const getPreviousPlayers = (
     )
 ;
 
+export const getWinStreaks = (
+    games: GameResult[]
+): WinStreakEntry[] => {
+    const chronological = [...games].sort(
+        (a, b) => Date.parse(a.end) - Date.parse(b.end)
+    );
+
+    return getPreviousPlayers(games)
+        .map(
+            player => getPlayerStreakEntry(chronological, player)
+        )
+        .sort(
+            (a, b) => b.longest - a.longest
+                || b.active - a.active
+                || a.name.localeCompare(b.name)
+        )
+    ;
+};
+
 export const getHeroLeaderboard = (
     games: GameResult[]
 ): LeaderboardEntry[] => getPreviousHeroes(games)
@@ -350,6 +400,83 @@ export const getPlayerHeroMatrix = (games: GameResult[]): PlayerHeroMatrix => {
 //
 // Helper funcs...
 //
+
+// Walks a single player's games in chronological order, splitting them into
+// runs of consecutive wins. Each run records the per-game detail (date,
+// hero used, opponents beaten) so the UI can show a game-by-game table. The
+// longest run (most recent, on ties) becomes `longestStreak`; a run still in
+// progress (the player's most recent game was a win) becomes `activeStreak`
+// with `isActive: true` and `endedBy: null`. `activeStreak` and
+// `longestStreak` may point at the very same run when the current streak is
+// also the player's best ever.
+const getPlayerStreakEntry = (
+    chronologicalGames: GameResult[],
+    player: string,
+): WinStreakEntry => {
+
+    const playerGames = chronologicalGames.filter(
+        x => x.players.some(p => p.name === player)
+    );
+
+    const runs: StreakRun[] = [];
+    let current: Omit<StreakRun, 'isActive' | 'endedBy'> | null = null;
+
+    playerGames.forEach(
+        (game, i) => {
+            if (game.winner === player) {
+                const hero = game.players.find(p => p.name === player)!.hero;
+                const win: StreakGameWin = {
+                    date: game.end,
+                    hero,
+                    beat: game.players
+                        .filter(p => p.name !== player)
+                        .map(p => ({ name: p.name, hero: p.hero })),
+                };
+
+                current = current === null
+                    ? { length: 1, startDate: game.end, endDate: game.end, games: [win] }
+                    : {
+                        ...current,
+                        length: current.length + 1,
+                        endDate: game.end,
+                        games: [...current.games, win],
+                    }
+                ;
+
+                if (i === playerGames.length - 1) {
+                    runs.push({ ...current, isActive: true, endedBy: null });
+                }
+            } else if (current !== null) {
+                const winnerHero = game.players.find(
+                    p => p.name === game.winner
+                )?.hero ?? "?";
+
+                runs.push({
+                    ...current,
+                    isActive: false,
+                    endedBy: { name: game.winner, hero: winnerHero, date: game.end },
+                });
+                current = null;
+            }
+        }
+    );
+
+    const longestStreak = runs.reduce<StreakRun | null>(
+        (best, run) => !best || run.length >= best.length ? run : best,
+        null
+    );
+
+    const activeStreak = runs.find(run => run.isActive) ?? null;
+
+    return {
+        name: player,
+        active: activeStreak?.length ?? 0,
+        longest: longestStreak?.length ?? 0,
+        activeStreak,
+        longestStreak,
+    };
+};
+
 const getHeroLeaderboardEntry = (
     games: GameResult[],
     hero: string,

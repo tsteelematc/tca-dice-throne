@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router";
-import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell, AverageDurationEntry } from "./GameResults";
-import { formatRealGameDuration } from "./GameResults";
+import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell, AverageDurationEntry, WinStreakEntry, StreakRun } from "./GameResults";
+import { formatRealGameDuration, MIN_STREAK_LENGTH } from "./GameResults";
 import { useEffect, useRef, useState } from "react";
 
 export const APP_TITLE = "My DT Life";
@@ -10,6 +10,7 @@ type HomeProps = {
     leaderboard: LeaderboardEntry[],
     heroLeaderboard: LeaderboardEntry[],
     playerHeroLeaderboard: LeaderboardEntry[],
+    winStreaks: WinStreakEntry[],
     playerHeroMatrix: PlayerHeroMatrix,
     playerAverageDurations: AverageDurationEntry[],
     heroAverageDurations: AverageDurationEntry[],
@@ -19,12 +20,64 @@ type HomeProps = {
     setTitle: (t: string) => void,
 };
 
+// Game-by-game breakdown for a single win streak: date, the streak-holder's
+// own player (hero) that game, and who they beat — plus who (and when)
+// ended the streak, if it has.
+const renderStreakRun = (playerName: string, run: StreakRun) => (
+    <>
+        <p className="opacity-60 mb-2 text-sm">
+            {run.length} in a row · {new Date(run.startDate).toLocaleDateString()} – {new Date(run.endDate).toLocaleDateString()}
+        </p>
+        <div className="overflow-x-auto mb-2">
+            <table className="table table-zebra table-sm">
+                <thead>
+                    <tr>
+                        <th>DATE</th>
+                        <th>PLAYER (HERO)</th>
+                        <th>BEAT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {run.games.map((g, i) => (
+                        <tr key={i}>
+                            <td className="text-nowrap">
+                                {new Date(g.date).toLocaleDateString()}
+                            </td>
+                            <td className="text-nowrap">
+                                {playerName} ({g.hero})
+                            </td>
+                            <td>
+                                {g.beat.map((b, j) => (
+                                    <span key={b.name}>
+                                        {j > 0 && ", "}
+                                        {b.name} ({b.hero})
+                                    </span>
+                                ))}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+        <div className="bg-base-200 rounded-xl p-2 text-sm">
+            <span className="opacity-60">Ended by: </span>
+            <span className="font-semibold">
+                {
+                    run.endedBy
+                        ? `${run.endedBy.name} (${run.endedBy.hero}) on ${new Date(run.endedBy.date).toLocaleDateString()}`
+                        : "🔥 Still active!"
+                }
+            </span>
+        </div>
+    </>
+);
 
 export const Home: React.FC<HomeProps> = ({
     generalFacts,
     leaderboard,
     heroLeaderboard,
     playerHeroLeaderboard,
+    winStreaks,
     playerHeroMatrix,
     playerAverageDurations,
     heroAverageDurations,
@@ -76,6 +129,15 @@ export const Home: React.FC<HomeProps> = ({
     const openHeatmapCell = (cell: PlayerHeroCell) => {
         setSelectedCell(cell);
         heatmapModalRef.current?.showModal();
+    };
+
+    const [selectedStreak, setSelectedStreak] = useState<WinStreakEntry | null>(null);
+
+    const streakModalRef = useRef<HTMLDialogElement>(null);
+
+    const openStreakDetail = (entry: WinStreakEntry) => {
+        setSelectedStreak(entry);
+        streakModalRef.current?.showModal();
     };
 
     // Then return JSX...
@@ -301,6 +363,73 @@ export const Home: React.FC<HomeProps> = ({
                     }
                 </div>
             </div>       
+            <div className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+                <div className="card-body p-2">
+                    <h2
+                        className="card-title text-nowrap ml-3"
+                    >
+                        Win Streaks
+                    </h2>
+                    {
+                        winStreaks.length === 0
+                            ? <p className="ml-3">N/A</p>
+                            : (
+                                <table className="table table-zebra">
+                                    <thead>
+                                        <tr>
+                                            <th>ACTIVE</th>
+                                            <th>LONGEST</th>
+                                            <th>PLAYER</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {
+                                            winStreaks.map(
+                                                x => {
+                                                    const hasLongest = x.longest >= MIN_STREAK_LENGTH;
+                                                    const hasDetail = hasLongest || x.active >= MIN_STREAK_LENGTH;
+                                                    return (
+                                                        <tr
+                                                            key={x.name}
+                                                            style={rowStyle(hl?.kind === 'player' && hl.name === x.name)}
+                                                        >
+                                                            <td>
+                                                                {
+                                                                    x.active >= MIN_STREAK_LENGTH
+                                                                        ? `🔥 ${x.active}`
+                                                                        : x.active
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                { hasLongest ? x.longest : "—" }
+                                                            </td>
+                                                            <th>
+                                                                { x.name }
+                                                            </th>
+                                                            <td>
+                                                                {
+                                                                    hasDetail && (
+                                                                        <button
+                                                                            className="btn btn-ghost btn-xs"
+                                                                            onClick={() => openStreakDetail(x)}
+                                                                        >
+                                                                            Details
+                                                                        </button>
+                                                                    )
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                }
+                                            )
+                                        }
+                                    </tbody>
+                                </table>
+                            )
+                    }
+                </div>
+            </div>
             <div className="card bg-base-100 w-full shadow-lg my-5">
                 <div className="card-body p-2">
                     <h2 className="card-title text-nowrap ml-3">
@@ -556,7 +685,46 @@ export const Home: React.FC<HomeProps> = ({
                 </form>
             </dialog>
 
+            <dialog ref={streakModalRef} className="modal">
+                <div className="modal-box max-w-xl">
+                    {selectedStreak && (() => {
+                        // When the active run is also the longest one (the
+                        // player's current streak is their best ever) only
+                        // show it once instead of two identical sections.
+                        const sameRun = selectedStreak.activeStreak !== null
+                            && selectedStreak.activeStreak === selectedStreak.longestStreak
+                        ;
 
+                        return (
+                            <>
+                                <h3 className="font-bold text-xl mb-4">{selectedStreak.name}</h3>
+                                {selectedStreak.activeStreak && (
+                                    <div className="mb-4">
+                                        <h4 className="font-semibold mb-2">
+                                            {sameRun ? "Current & Longest Streak" : "Active Streak"}
+                                        </h4>
+                                        {renderStreakRun(selectedStreak.name, selectedStreak.activeStreak)}
+                                    </div>
+                                )}
+                                {selectedStreak.longestStreak && !sameRun && (
+                                    <div className="mb-4">
+                                        <h4 className="font-semibold mb-2">Longest Streak</h4>
+                                        {renderStreakRun(selectedStreak.name, selectedStreak.longestStreak)}
+                                    </div>
+                                )}
+                            </>
+                        );
+                    })()}
+                    <div className="modal-action">
+                        <form method="dialog">
+                            <button className="btn btn-primary">Close</button>
+                        </form>
+                    </div>
+                </div>
+                <form method="dialog" className="modal-backdrop">
+                    <button>close</button>
+                </form>
+            </dialog>
 
         </>
     );
