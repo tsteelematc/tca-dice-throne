@@ -406,22 +406,22 @@ export const Setup: React.FC<SetupProps> = ({
                     <div className="card bg-base-100 w-full shadow-lg my-2">
                         <div className="card-body p-4 sm:p-6">
                             <h2 className="card-title">Quick Select: Active Win Streaks</h2>
-                            <p className="text-sm opacity-70">
-                                Choose setup from a current win streak...
-                            </p>
                             <div className="mt-3">
                                 <table className="table table-sm w-full table-fixed whitespace-normal">
                                     {
                                         quickSelectPlayerStreaks.length > 0 && (
                                             <tbody>
                                                 <tr>
-                                                    <th colSpan={4} className="text-sm font-medium text-base-content/70">
+                                                    <th colSpan={4} className="bg-primary/10 text-sm font-medium text-base-content/70">
                                                         Player Streaks
                                                     </th>
                                                 </tr>
-                                                    {quickSelectPlayerStreaks.flatMap(({ name, games }) =>
+                                                    {quickSelectPlayerStreaks.flatMap(({ name, games }, streakIndex) =>
                                                         games.map((game, index) => (
-                                                            <tr key={`${name}-${game.date}-${index}`}>
+                                                            <tr
+                                                                key={`${name}-${game.date}-${index}`}
+                                                                className={streakIndex % 2 === 0 ? "bg-base-100" : "bg-primary/5"}
+                                                            >
                                                                 <td>{name}</td>
                                                                 <td className="text-right">{index + 1}</td>
                                                                 <td>{new Date(game.date).toLocaleDateString()}</td>
@@ -446,13 +446,16 @@ export const Setup: React.FC<SetupProps> = ({
                                         quickSelectHeroStreaks.length > 0 && (
                                             <tbody>
                                                 <tr>
-                                                    <th colSpan={4} className="text-sm font-medium text-base-content/70">
+                                                    <th colSpan={4} className="bg-primary/10 text-sm font-medium text-base-content/70">
                                                         Hero Streaks
                                                     </th>
                                                 </tr>
-                                                    {quickSelectHeroStreaks.flatMap(({ name, games }) =>
+                                                    {quickSelectHeroStreaks.flatMap(({ name, games }, streakIndex) =>
                                                         games.map((game, index) => (
-                                                            <tr key={`${name}-${game.date}-${index}`}>
+                                                            <tr
+                                                                key={`${name}-${game.date}-${index}`}
+                                                                className={streakIndex % 2 === 0 ? "bg-base-100" : "bg-primary/5"}
+                                                            >
                                                                 <td>{name}</td>
                                                                 <td className="text-right">{index + 1}</td>
                                                                 <td>{new Date(game.date).toLocaleDateString()}</td>

@@ -81,3 +81,11 @@ no keep the column just remove header
 ```text
 better, update md file with all the prompts including new ones and npm run build, generate a suitable commit message and commit it all
 ```
+
+```text
+no help text, zebra tables by player and hero for legibility, maybe orange, but subdued player hero streak section headers
+```
+
+```text
+not zebra each row, but all rows for same player and same hero
+```
