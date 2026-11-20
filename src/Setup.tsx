@@ -411,14 +411,6 @@ export const Setup: React.FC<SetupProps> = ({
                             </p>
                             <div className="mt-3">
                                 <table className="table table-sm w-full table-fixed whitespace-normal">
-                                    <thead>
-                                        <tr>
-                                            <th>Streak</th>
-                                            <th className="text-right">Win #</th>
-                                            <th>Date</th>
-                                            <th></th>
-                                        </tr>
-                                    </thead>
                                     {
                                         quickSelectPlayerStreaks.length > 0 && (
                                             <tbody>
