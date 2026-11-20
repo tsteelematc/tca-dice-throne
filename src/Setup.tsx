@@ -1,18 +1,43 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import type { Player } from "./GameResults";
+import type { Player, WinningStreakEntry } from "./GameResults";
 
 type SetupProps = {
     setTitle: (t: string) => void;
     previousPlayers: string[];
     previousHeroes: string[];
+    playerWinningStreaks: WinningStreakEntry[];
     setCurrentPlayers: (players: Player[]) => void;
 };
+
+type QuickStartPlayer = {
+    name: string;
+    heroes: string[];
+};
+
+const getQuickStartPlayers = (
+    streaks: WinningStreakEntry[]
+): QuickStartPlayer[] => streaks.flatMap(streak => {
+    const latestWin = streak.currentStreakGames[
+        streak.currentStreakGames.length - 1
+    ];
+    return streak.currentStreak > 1 && latestWin
+        ? [{
+            name: latestWin.winner.name,
+            heroes: [...new Set(
+                [...streak.currentStreakGames]
+                    .reverse()
+                    .map(game => game.winner.hero)
+            )],
+        }]
+        : [];
+});
 
 export const Setup: React.FC<SetupProps> = ({
     setTitle,
     previousPlayers,
     previousHeroes,
+    playerWinningStreaks,
     setCurrentPlayers,
 }) => {
 
@@ -161,6 +186,24 @@ export const Setup: React.FC<SetupProps> = ({
             x => x.checked && x.hero.length > 0
     ).length === 2;
 
+    const quickStartPlayers = getQuickStartPlayers(playerWinningStreaks);
+    const selectedPlayerCount = availablePlayers.filter(player => player.checked).length;
+
+    const selectQuickStartHero = (playerName: string, hero: string) => {
+        setAvailablePlayers(players => {
+            const playerIsSelected = players.some(
+                player => player.name === playerName && player.checked
+            );
+            if (!playerIsSelected && players.filter(player => player.checked).length >= 2) {
+                return players;
+            }
+            return players.map(player => player.name === playerName
+                ? { ...player, checked: true, hero }
+                : player
+            );
+        });
+    };
+
     //
     // Then return JSX...
     //
@@ -269,7 +312,7 @@ export const Setup: React.FC<SetupProps> = ({
                     </div>
                 </div>
             </div>
-            <div className="card bg-base-100 w-full shadow-lg my-2">
+            <div id="choose-players" className="card bg-base-100 w-full shadow-lg my-2">
                 <div className="card-body p-4 sm:p-6">
                     <h2 className="card-title">Choose 2 Players</h2>
                     <span className="badge badge-ghost badge-sm font-normal ml-0">And their Heroes</span>
@@ -352,6 +395,48 @@ export const Setup: React.FC<SetupProps> = ({
                     </div>
                 </div>
             </div>
+            {
+                quickStartPlayers.length > 0 && (
+                    <div className="card bg-base-100 w-full shadow-lg my-2">
+                        <div className="card-body p-4 sm:p-6">
+                            <h2 className="card-title">Quick Pick from Active Streaks</h2>
+                            <p className="text-sm opacity-70">
+                                Select up to two player and hero pairs below, then start the game as usual.
+                            </p>
+                            <div className="flex flex-col gap-2 mt-3">
+                                {quickStartPlayers.map(({ name, heroes }) => (
+                                    <div key={name} className="flex flex-wrap items-center gap-2">
+                                        <span className="font-semibold mr-1">{name}</span>
+                                        {heroes.map(hero => {
+                                            const selected = availablePlayers.some(
+                                                player => player.name === name
+                                                    && player.checked
+                                                    && player.hero === hero
+                                            );
+                                            const disabled = selectedPlayerCount >= 2
+                                                && !availablePlayers.some(
+                                                    player => player.name === name && player.checked
+                                                );
+                                            return (
+                                                <button
+                                                    key={`${name}-${hero}`}
+                                                    type="button"
+                                                    className={`btn btn-sm ${selected ? "btn-primary" : "btn-outline"}`}
+                                                    aria-pressed={selected}
+                                                    disabled={disabled}
+                                                    onClick={() => selectQuickStartHero(name, hero)}
+                                                >
+                                                    {hero}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </>
             </div>
             <div className="drawer-side">

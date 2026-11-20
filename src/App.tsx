@@ -751,6 +751,9 @@ const App = () => {
                   previousHeroes={
                     getPreviousHeroes(gameResults)
                   }
+                  playerWinningStreaks={
+                    getPlayerWinningStreaks(gameResults)
+                  }
                   setCurrentPlayers={setCurrentPlayers}
                 />
               }
