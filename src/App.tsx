@@ -754,6 +754,9 @@ const App = () => {
                   playerWinningStreaks={
                     getPlayerWinningStreaks(gameResults)
                   }
+                  heroWinningStreaks={
+                    getHeroWinningStreaks(gameResults)
+                  }
                   setCurrentPlayers={setCurrentPlayers}
                 />
               }

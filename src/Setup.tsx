@@ -1,43 +1,37 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import type { Player, WinningStreakEntry } from "./GameResults";
+import type { Player, WinningStreakEntry, WinningStreakGame } from "./GameResults";
 
 type SetupProps = {
     setTitle: (t: string) => void;
     previousPlayers: string[];
     previousHeroes: string[];
     playerWinningStreaks: WinningStreakEntry[];
+    heroWinningStreaks: WinningStreakEntry[];
     setCurrentPlayers: (players: Player[]) => void;
 };
 
-type QuickStartPlayer = {
+type QuickSelectStreak = {
     name: string;
-    heroes: string[];
+    games: WinningStreakGame[];
 };
 
-const getQuickStartPlayers = (
+const getQuickSelectStreaks = (
     streaks: WinningStreakEntry[]
-): QuickStartPlayer[] => streaks.flatMap(streak => {
-    const latestWin = streak.currentStreakGames[
-        streak.currentStreakGames.length - 1
-    ];
-    return streak.currentStreak > 1 && latestWin
-        ? [{
-            name: latestWin.winner.name,
-            heroes: [...new Set(
-                [...streak.currentStreakGames]
-                    .reverse()
-                    .map(game => game.winner.hero)
-            )],
-        }]
-        : [];
-});
+): QuickSelectStreak[] => streaks
+    .filter(streak => streak.currentStreak > 1)
+    .map(streak => ({
+        name: streak.name,
+        games: streak.currentStreakGames,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
 export const Setup: React.FC<SetupProps> = ({
     setTitle,
     previousPlayers,
     previousHeroes,
     playerWinningStreaks,
+    heroWinningStreaks,
     setCurrentPlayers,
 }) => {
 
@@ -186,10 +180,11 @@ export const Setup: React.FC<SetupProps> = ({
             x => x.checked && x.hero.length > 0
     ).length === 2;
 
-    const quickStartPlayers = getQuickStartPlayers(playerWinningStreaks);
+    const quickSelectPlayerStreaks = getQuickSelectStreaks(playerWinningStreaks);
+    const quickSelectHeroStreaks = getQuickSelectStreaks(heroWinningStreaks);
     const selectedPlayerCount = availablePlayers.filter(player => player.checked).length;
 
-    const selectQuickStartHero = (playerName: string, hero: string) => {
+    const selectQuickStartPlayer = (playerName: string, hero: string) => {
         setAvailablePlayers(players => {
             const playerIsSelected = players.some(
                 player => player.name === playerName && player.checked
@@ -203,6 +198,17 @@ export const Setup: React.FC<SetupProps> = ({
             );
         });
     };
+
+    const isQuickStartSelection = (player: Player) => availablePlayers.some(
+        selected => selected.name === player.name
+            && selected.checked
+            && selected.hero === player.hero
+    );
+
+    const isQuickStartDisabled = (player: Player) => selectedPlayerCount >= 2
+        && !availablePlayers.some(
+            selected => selected.name === player.name && selected.checked
+        );
 
     //
     // Then return JSX...
@@ -396,42 +402,86 @@ export const Setup: React.FC<SetupProps> = ({
                 </div>
             </div>
             {
-                quickStartPlayers.length > 0 && (
+                (quickSelectPlayerStreaks.length > 0 || quickSelectHeroStreaks.length > 0) && (
                     <div className="card bg-base-100 w-full shadow-lg my-2">
                         <div className="card-body p-4 sm:p-6">
-                            <h2 className="card-title">Quick Pick from Active Streaks</h2>
+                            <h2 className="card-title">Quick Select: Active Win Streaks</h2>
                             <p className="text-sm opacity-70">
-                                Select up to two player and hero pairs below, then start the game as usual.
+                                Choose setup from a current win streak...
                             </p>
-                            <div className="flex flex-col gap-2 mt-3">
-                                {quickStartPlayers.map(({ name, heroes }) => (
-                                    <div key={name} className="flex flex-wrap items-center gap-2">
-                                        <span className="font-semibold mr-1">{name}</span>
-                                        {heroes.map(hero => {
-                                            const selected = availablePlayers.some(
-                                                player => player.name === name
-                                                    && player.checked
-                                                    && player.hero === hero
-                                            );
-                                            const disabled = selectedPlayerCount >= 2
-                                                && !availablePlayers.some(
-                                                    player => player.name === name && player.checked
-                                                );
-                                            return (
-                                                <button
-                                                    key={`${name}-${hero}`}
-                                                    type="button"
-                                                    className={`btn btn-sm ${selected ? "btn-primary" : "btn-outline"}`}
-                                                    aria-pressed={selected}
-                                                    disabled={disabled}
-                                                    onClick={() => selectQuickStartHero(name, hero)}
-                                                >
-                                                    {hero}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                ))}
+                            <div className="mt-3">
+                                <table className="table table-sm w-full table-fixed whitespace-normal">
+                                    <thead>
+                                        <tr>
+                                            <th>Streak</th>
+                                            <th className="text-right">Win #</th>
+                                            <th>Date</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    {
+                                        quickSelectPlayerStreaks.length > 0 && (
+                                            <tbody>
+                                                <tr>
+                                                    <th colSpan={4} className="text-sm font-medium text-base-content/70">
+                                                        Player Streaks
+                                                    </th>
+                                                </tr>
+                                                    {quickSelectPlayerStreaks.flatMap(({ name, games }) =>
+                                                        games.map((game, index) => (
+                                                            <tr key={`${name}-${game.date}-${index}`}>
+                                                                <td>{name}</td>
+                                                                <td className="text-right">{index + 1}</td>
+                                                                <td>{new Date(game.date).toLocaleDateString()}</td>
+                                                                <td>
+                                                                    <button
+                                                                        type="button"
+                                                                        className={`btn btn-link btn-sm min-h-0 whitespace-normal break-words p-0 text-left ${isQuickStartSelection(game.winner) ? "text-primary font-bold" : ""}`}
+                                                                        aria-pressed={isQuickStartSelection(game.winner)}
+                                                                        disabled={isQuickStartDisabled(game.winner)}
+                                                                        onClick={() => selectQuickStartPlayer(game.winner.name, game.winner.hero)}
+                                                                    >
+                                                                        {game.winner.hero}
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                            </tbody>
+                                        )
+                                    }
+                                    {
+                                        quickSelectHeroStreaks.length > 0 && (
+                                            <tbody>
+                                                <tr>
+                                                    <th colSpan={4} className="text-sm font-medium text-base-content/70">
+                                                        Hero Streaks
+                                                    </th>
+                                                </tr>
+                                                    {quickSelectHeroStreaks.flatMap(({ name, games }) =>
+                                                        games.map((game, index) => (
+                                                            <tr key={`${name}-${game.date}-${index}`}>
+                                                                <td>{name}</td>
+                                                                <td className="text-right">{index + 1}</td>
+                                                                <td>{new Date(game.date).toLocaleDateString()}</td>
+                                                                <td>
+                                                                    <button
+                                                                        type="button"
+                                                                        className={`btn btn-link btn-sm min-h-0 whitespace-normal break-words p-0 text-left ${isQuickStartSelection(game.winner) ? "text-primary font-bold" : ""}`}
+                                                                        aria-pressed={isQuickStartSelection(game.winner)}
+                                                                        disabled={isQuickStartDisabled(game.winner)}
+                                                                        onClick={() => selectQuickStartPlayer(game.winner.name, game.winner.hero)}
+                                                                    >
+                                                                        {game.winner.name}
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                            </tbody>
+                                        )
+                                    }
+                                </table>
                             </div>
                         </div>
                     </div>
