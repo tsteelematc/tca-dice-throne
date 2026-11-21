@@ -37,20 +37,25 @@ export type AverageDurationEntry = {
     avg: string;
 };
 
-export type WinningStreakEntry = {
+export type StreakEntry = {
     name: string;
     longestStreak: number;
     currentStreak: number;
-    longestStreakGames: WinningStreakGame[];
-    currentStreakGames: WinningStreakGame[];
-    longestStreakBreaker: WinningStreakGame | null;
+    longestStreakGames: StreakGame[];
+    currentStreakGames: StreakGame[];
+    longestStreakBreaker: StreakGame | null;
 };
 
-export type WinningStreakGame = {
+export type StreakGame = {
     date: string;
     winner: Player;
     loser: Player | null;
 };
+
+export type WinningStreakEntry = StreakEntry;
+export type LosingStreakEntry = StreakEntry;
+export type WinningStreakGame = StreakGame;
+export type LosingStreakGame = StreakGame;
 
 // Games shorter than this are assumed to be data entry errors.
 export const MIN_REAL_GAME_MINUTES = 10;
@@ -160,16 +165,17 @@ export const getHeroAverageDurations = (
     games: GameResult[]
 ): AverageDurationEntry[] => getAverageDurations(games, p => p.hero);
 
-const getWinningStreaks = (
+const getStreaks = (
     games: GameResult[],
     getKey: (player: Player) => string,
     getName: (player: Player) => string,
-): WinningStreakEntry[] => {
+    result: "win" | "loss",
+): StreakEntry[] => {
     const streaks = new Map<string, {
         name: string,
-        longestGames: WinningStreakGame[],
-        currentGames: WinningStreakGame[],
-        longestBreaker: WinningStreakGame | null,
+        longestGames: StreakGame[],
+        currentGames: StreakGame[],
+        longestBreaker: StreakGame | null,
     }>();
 
     [...games]
@@ -190,11 +196,12 @@ const getWinningStreaks = (
                 };
                 streaks.set(key, stats);
 
-                if (key === winnerKey) {
+                const isWin = key === winnerKey;
+                if ((result === "win" && isWin) || (result === "loss" && !isWin)) {
                     const winningParticipant = winner ?? participant;
-                    const losingParticipant = game.players.find(
-                        player => player !== winningParticipant
-                    ) ?? null;
+                    const losingParticipant = result === "win"
+                        ? game.players.find(player => player !== winningParticipant) ?? null
+                        : participant;
                     stats.currentGames.push({
                         date: game.end,
                         winner: winningParticipant,
@@ -209,12 +216,12 @@ const getWinningStreaks = (
                         stats.currentGames.length > 0
                         && stats.currentGames.length === stats.longestGames.length
                     ) {
-                        stats.longestBreaker = winner
-                            ? {
-                                date: game.end,
-                                winner,
-                                loser: participant,
-                            }
+                        const breakerWinner = result === "win" ? winner : participant;
+                        const breakerLoser = result === "win"
+                            ? participant
+                            : game.players.find(player => player !== participant) ?? null;
+                        stats.longestBreaker = breakerWinner
+                            ? { date: game.end, winner: breakerWinner, loser: breakerLoser }
                             : null;
                     }
                     stats.currentGames = [];
@@ -242,18 +249,36 @@ const getWinningStreaks = (
 
 export const getPlayerWinningStreaks = (
     games: GameResult[]
-): WinningStreakEntry[] => getWinningStreaks(games, p => p.name, p => p.name);
+): WinningStreakEntry[] => getStreaks(games, p => p.name, p => p.name, "win");
 
 export const getHeroWinningStreaks = (
     games: GameResult[]
-): WinningStreakEntry[] => getWinningStreaks(games, p => p.hero, p => p.hero);
+): WinningStreakEntry[] => getStreaks(games, p => p.hero, p => p.hero, "win");
 
 export const getPlayerHeroWinningStreaks = (
     games: GameResult[]
-): WinningStreakEntry[] => getWinningStreaks(
+): WinningStreakEntry[] => getStreaks(
     games,
     p => JSON.stringify([p.name, p.hero]),
     p => `${p.name} (${p.hero})`,
+    "win",
+);
+
+export const getPlayerLosingStreaks = (
+    games: GameResult[]
+): LosingStreakEntry[] => getStreaks(games, p => p.name, p => p.name, "loss");
+
+export const getHeroLosingStreaks = (
+    games: GameResult[]
+): LosingStreakEntry[] => getStreaks(games, p => p.hero, p => p.hero, "loss");
+
+export const getPlayerHeroLosingStreaks = (
+    games: GameResult[]
+): LosingStreakEntry[] => getStreaks(
+    games,
+    p => JSON.stringify([p.name, p.hero]),
+    p => `${p.name} (${p.hero})`,
+    "loss",
 );
 
 export const getAllGamesSorted = (

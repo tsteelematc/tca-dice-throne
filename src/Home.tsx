@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell, AverageDurationEntry, WinningStreakEntry, WinningStreakGame } from "./GameResults";
+import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell, AverageDurationEntry, WinningStreakEntry, LosingStreakEntry, WinningStreakGame } from "./GameResults";
 import { formatRealGameDuration } from "./GameResults";
 import { useEffect, useRef, useState } from "react";
 import localforage from "localforage";
@@ -15,6 +15,9 @@ const FUN_FACTS = [
     { id: "player-winning-streaks", label: "Player Winning Streaks" },
     { id: "hero-winning-streaks", label: "Hero Winning Streaks" },
     { id: "player-hero-winning-streaks", label: "Player + Hero Winning Streaks" },
+    { id: "player-losing-streaks", label: "Player Losing Streaks" },
+    { id: "hero-losing-streaks", label: "Hero Losing Streaks" },
+    { id: "player-hero-losing-streaks", label: "Player + Hero Losing Streaks" },
     { id: "slow-players", label: "Slow Players?" },
     { id: "slow-heroes", label: "Slow Heroes?" },
     { id: "all-games", label: "All Games" },
@@ -44,6 +47,9 @@ type HomeProps = {
     playerWinningStreaks: WinningStreakEntry[],
     heroWinningStreaks: WinningStreakEntry[],
     playerHeroWinningStreaks: WinningStreakEntry[],
+    playerLosingStreaks: LosingStreakEntry[],
+    heroLosingStreaks: LosingStreakEntry[],
+    playerHeroLosingStreaks: LosingStreakEntry[],
     allGames: GameResult[],
     canCopyToMine: (g: GameResult) => boolean,
     copyGameToMine: (g: GameResult) => void,
@@ -62,6 +68,9 @@ export const Home: React.FC<HomeProps> = ({
     playerWinningStreaks,
     heroWinningStreaks,
     playerHeroWinningStreaks,
+    playerLosingStreaks,
+    heroLosingStreaks,
+    playerHeroLosingStreaks,
     allGames,
     canCopyToMine,
     copyGameToMine,
@@ -90,6 +99,7 @@ export const Home: React.FC<HomeProps> = ({
         label: string,
         games: WinningStreakGame[],
         breaker: WinningStreakGame | null,
+        outcome: "wins" | "losses",
     } | null>(null);
 
     const toggleHighlight = (kind: 'player' | 'hero', name: string) => setHl(
@@ -130,15 +140,19 @@ export const Home: React.FC<HomeProps> = ({
         label: string,
         games: WinningStreakGame[],
         breaker: WinningStreakGame | null,
+        outcome: "wins" | "losses",
     ) => {
-        setSelectedStreak({ name, label, games, breaker });
+        setSelectedStreak({ name, label, games, breaker, outcome });
         streakModalRef.current?.showModal();
     };
 
-    const winningStreakCards = [
-        { id: "player-winning-streaks", title: "Player Winning Streaks", label: "PLAYER", kind: "player" as const, entries: playerWinningStreaks },
-        { id: "hero-winning-streaks", title: "Hero Winning Streaks", label: "HERO", kind: "hero" as const, entries: heroWinningStreaks },
-        { id: "player-hero-winning-streaks", title: "Player + Hero Winning Streaks", label: "PLAYER (HERO)", kind: "playerHero" as const, entries: playerHeroWinningStreaks },
+    const streakCards = [
+        { id: "player-winning-streaks", title: "Player Winning Streaks", label: "PLAYER", kind: "player" as const, entries: playerWinningStreaks, outcome: "wins" as const },
+        { id: "hero-winning-streaks", title: "Hero Winning Streaks", label: "HERO", kind: "hero" as const, entries: heroWinningStreaks, outcome: "wins" as const },
+        { id: "player-hero-winning-streaks", title: "Player + Hero Winning Streaks", label: "PLAYER (HERO)", kind: "playerHero" as const, entries: playerHeroWinningStreaks, outcome: "wins" as const },
+        { id: "player-losing-streaks", title: "Player Losing Streaks", label: "PLAYER", kind: "player" as const, entries: playerLosingStreaks, outcome: "losses" as const },
+        { id: "hero-losing-streaks", title: "Hero Losing Streaks", label: "HERO", kind: "hero" as const, entries: heroLosingStreaks, outcome: "losses" as const },
+        { id: "player-hero-losing-streaks", title: "Player + Hero Losing Streaks", label: "PLAYER (HERO)", kind: "playerHero" as const, entries: playerHeroLosingStreaks, outcome: "losses" as const },
     ] as const;
 
     useEffect(() => {
@@ -525,7 +539,7 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
             </div>
 
-            {winningStreakCards.map(card => (
+            {streakCards.map(card => (
                 <div key={card.title} id={card.id} style={{ order: funFactsOrder.indexOf(card.id) }} hidden={hiddenFunFacts.includes(card.id)} className="card fun-fact-card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                     <div className="card-body p-2">
                         <div className="flex items-center justify-between gap-2">
@@ -580,6 +594,7 @@ export const Home: React.FC<HomeProps> = ({
                                                                     'Longest',
                                                                     x.longestStreakGames,
                                                                     x.longestStreakBreaker,
+                                                                    card.outcome,
                                                                 );
                                                             }}
                                                         >
@@ -602,6 +617,7 @@ export const Home: React.FC<HomeProps> = ({
                                                                         'Current',
                                                                         x.currentStreakGames,
                                                                         null,
+                                                                        card.outcome,
                                                                     );
                                                                 }}
                                                             >
@@ -818,7 +834,7 @@ export const Home: React.FC<HomeProps> = ({
                                 {selectedStreak.label} streak: {selectedStreak.name}
                             </h3>
                             <p className="opacity-60 mb-4 text-sm">
-                                {selectedStreak.games.length} consecutive wins
+                                {selectedStreak.games.length} consecutive {selectedStreak.outcome}
                             </p>
                             <table className="table table-xs w-full table-fixed">
                                 <colgroup>

@@ -19,8 +19,11 @@ import {
   getPreviousHeroes,
   getPreviousPlayers,
   getHeroWinningStreaks,
+  getHeroLosingStreaks,
   getPlayerHeroWinningStreaks,
+  getPlayerHeroLosingStreaks,
   getPlayerWinningStreaks,
+  getPlayerLosingStreaks,
   getGameKey,
   mergeGames,
   type GameResult,
@@ -731,6 +734,15 @@ const App = () => {
                   }
                   playerHeroWinningStreaks={
                     getPlayerHeroWinningStreaks(gameResults)
+                  }
+                  playerLosingStreaks={
+                    getPlayerLosingStreaks(gameResults)
+                  }
+                  heroLosingStreaks={
+                    getHeroLosingStreaks(gameResults)
+                  }
+                  playerHeroLosingStreaks={
+                    getPlayerHeroLosingStreaks(gameResults)
                   }
                   allGames={
                     getAllGamesSorted(gameResults)
