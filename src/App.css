@@ -55,7 +55,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
-    min-width: 14rem;
+    min-width: 18rem;
     padding: 0.75rem;
     border: 1px solid color-mix(in srgb, var(--color-base-content) 18%, transparent);
     border-radius: 1rem;
@@ -76,12 +76,58 @@
 }
 
 .fun-facts-nav-menu .fun-facts-nav-item {
+    flex: 1;
+    min-width: 0;
     justify-content: flex-start;
     gap: 0.75rem;
     border: 1px solid var(--color-base-300);
     background-color: var(--color-base-100);
     color: var(--color-base-content);
     transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.fun-facts-nav-row {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+}
+
+.fun-facts-nav-reorder {
+    display: flex;
+    flex-direction: column;
+}
+
+.fun-facts-nav-reorder .btn {
+    width: 1.75rem;
+    min-height: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+}
+
+.fun-facts-hidden-heading {
+    padding-top: 0.75rem;
+}
+
+.fun-facts-nav-menu .fun-facts-hidden-item {
+    color: color-mix(in srgb, var(--color-base-content) 70%, transparent);
+}
+
+.fun-facts-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.fun-fact-card {
+    scroll-margin-top: 1rem;
+}
+
+.fun-fact-card[hidden] {
+    display: none;
+}
+
+.fun-fact-hide {
+    flex: none;
+    margin-right: 0.25rem;
 }
 
 .fun-facts-nav-menu .fun-facts-nav-item .fun-facts-nav-number {
@@ -106,15 +152,6 @@
 
 .fun-facts-nav-menu[hidden] {
     display: none;
-}
-
-#general-facts,
-#leaderboards,
-#player-hero-matrix,
-#winning-streaks,
-#slow-players,
-#all-games {
-    scroll-margin-top: 1rem;
 }
 
 [data-theme] .card {

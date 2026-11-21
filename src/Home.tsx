@@ -2,8 +2,36 @@ import { useNavigate } from "react-router";
 import type { GeneralFacts, GameResult, LeaderboardEntry, PlayerHeroMatrix, PlayerHeroCell, AverageDurationEntry, WinningStreakEntry, WinningStreakGame } from "./GameResults";
 import { formatRealGameDuration } from "./GameResults";
 import { useEffect, useRef, useState } from "react";
+import localforage from "localforage";
 
 export const APP_TITLE = "My DT Life";
+
+const FUN_FACTS = [
+    { id: "general-facts", label: "General Facts" },
+    { id: "player-leaderboard", label: "Player Leaderboard" },
+    { id: "hero-leaderboard", label: "Hero Leaderboard" },
+    { id: "player-hero-leaderboard", label: "Player + Hero Leaderboard" },
+    { id: "player-hero-matrix", label: "Player × Hero Frequency" },
+    { id: "player-winning-streaks", label: "Player Winning Streaks" },
+    { id: "hero-winning-streaks", label: "Hero Winning Streaks" },
+    { id: "player-hero-winning-streaks", label: "Player + Hero Winning Streaks" },
+    { id: "slow-players", label: "Slow Players?" },
+    { id: "slow-heroes", label: "Slow Heroes?" },
+    { id: "all-games", label: "All Games" },
+] as const;
+
+type FunFactId = typeof FUN_FACTS[number]["id"];
+
+const normalizeFunFactIds = (stored: unknown, defaults: FunFactId[]): FunFactId[] => {
+    const validIds = new Set<string>(FUN_FACTS.map(fact => fact.id));
+    const savedIds = Array.isArray(stored)
+        ? stored.filter((id): id is FunFactId => typeof id === "string" && validIds.has(id))
+        : [];
+    return [
+        ...new Set(savedIds),
+        ...defaults.filter(id => !savedIds.includes(id)),
+    ];
+};
 
 type HomeProps = {
     generalFacts: GeneralFacts,
@@ -49,6 +77,12 @@ export const Home: React.FC<HomeProps> = ({
 
     const [selectedCell, setSelectedCell] = useState<PlayerHeroCell | null>(null);
     const [funFactsNavOpen, setFunFactsNavOpen] = useState(false);
+    const [hiddenFunFacts, setHiddenFunFacts] = useState<FunFactId[]>([]);
+    const [funFactsOrder, setFunFactsOrder] = useState<FunFactId[]>(
+        FUN_FACTS.map(fact => fact.id)
+    );
+    const [funFactsLoaded, setFunFactsLoaded] = useState(false);
+    const [restoredFunFact, setRestoredFunFact] = useState<FunFactId | null>(null);
 
     const [hl, setHl] = useState<{ kind: 'player' | 'hero', name: string } | null>(null);
     const [selectedStreak, setSelectedStreak] = useState<{
@@ -102,24 +136,105 @@ export const Home: React.FC<HomeProps> = ({
     };
 
     const winningStreakCards = [
-        { id: "winning-streaks", title: "Player Winning Streaks", label: "PLAYER", kind: "player" as const, entries: playerWinningStreaks },
-        { title: "Hero Winning Streaks", label: "HERO", kind: "hero" as const, entries: heroWinningStreaks },
-        { title: "Player + Hero Winning Streaks", label: "PLAYER (HERO)", kind: "playerHero" as const, entries: playerHeroWinningStreaks },
-    ];
+        { id: "player-winning-streaks", title: "Player Winning Streaks", label: "PLAYER", kind: "player" as const, entries: playerWinningStreaks },
+        { id: "hero-winning-streaks", title: "Hero Winning Streaks", label: "HERO", kind: "hero" as const, entries: heroWinningStreaks },
+        { id: "player-hero-winning-streaks", title: "Player + Hero Winning Streaks", label: "PLAYER (HERO)", kind: "playerHero" as const, entries: playerHeroWinningStreaks },
+    ] as const;
 
-    const funFactsSections = [
-        { id: "general-facts", label: "General Facts" },
-        { id: "leaderboards", label: "Leaderboards" },
-        { id: "player-hero-matrix", label: "Player × Hero Matrix" },
-        { id: "winning-streaks", label: "Winning Streaks" },
-        { id: "slow-players", label: "Slow Players" },
-        { id: "all-games", label: "All Games" },
-    ];
+    useEffect(() => {
+        let ignore = false;
+        const loadFunFactPreferences = async () => {
+            try {
+                const [savedHidden, savedOrder] = await Promise.all([
+                    localforage.getItem<unknown>("hiddenFunFacts"),
+                    localforage.getItem<unknown>("funFactsOrder"),
+                ]);
+                if (!ignore) {
+                    setHiddenFunFacts(normalizeFunFactIds(savedHidden, []));
+                    setFunFactsOrder(normalizeFunFactIds(
+                        savedOrder,
+                        FUN_FACTS.map(fact => fact.id),
+                    ));
+                }
+            } catch (error) {
+                console.error("Failed to load fun fact preferences.", error);
+            } finally {
+                if (!ignore) {
+                    setFunFactsLoaded(true);
+                }
+            }
+        };
+        void loadFunFactPreferences();
+        return () => {
+            ignore = true;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!funFactsLoaded) return;
+        void Promise.all([
+            localforage.setItem("hiddenFunFacts", hiddenFunFacts),
+            localforage.setItem("funFactsOrder", funFactsOrder),
+        ]).catch(error => {
+            console.error("Failed to save fun fact preferences.", error);
+        });
+    }, [funFactsLoaded, hiddenFunFacts, funFactsOrder]);
 
     const scrollToFunFactsSection = (id: string) => {
         document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
         setFunFactsNavOpen(false);
     };
+
+    useEffect(() => {
+        if (!restoredFunFact || hiddenFunFacts.includes(restoredFunFact)) return;
+        document.getElementById(restoredFunFact)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        setFunFactsNavOpen(false);
+        setRestoredFunFact(null);
+    }, [restoredFunFact, hiddenFunFacts]);
+
+    const hideFunFact = (id: FunFactId) => {
+        setHiddenFunFacts(current => current.includes(id) ? current : [...current, id]);
+    };
+
+    const showFunFact = (id: FunFactId) => {
+        setHiddenFunFacts(current => current.filter(hiddenId => hiddenId !== id));
+        setRestoredFunFact(id);
+    };
+
+    const moveFunFact = (id: FunFactId, delta: -1 | 1) => {
+        setFunFactsOrder(current => {
+            const visibleIds = current.filter(factId => !hiddenFunFacts.includes(factId));
+            const index = visibleIds.indexOf(id);
+            const nextIndex = index + delta;
+            if (index < 0 || nextIndex < 0 || nextIndex >= visibleIds.length) return current;
+            [visibleIds[index], visibleIds[nextIndex]] = [visibleIds[nextIndex], visibleIds[index]];
+            let visibleIndex = 0;
+            return current.map(factId => hiddenFunFacts.includes(factId)
+                ? factId
+                : visibleIds[visibleIndex++]
+            );
+        });
+    };
+
+    const orderedFunFacts = funFactsOrder
+        .map(id => FUN_FACTS.find(fact => fact.id === id))
+        .filter((fact): fact is typeof FUN_FACTS[number] => fact !== undefined);
+    const visibleFunFacts = orderedFunFacts.filter(fact => !hiddenFunFacts.includes(fact.id));
+    const hiddenFunFactItems = orderedFunFacts.filter(fact => hiddenFunFacts.includes(fact.id));
+
+    const hideFunFactButton = (id: FunFactId, label: string) => (
+        <button
+            type="button"
+            className="btn btn-ghost btn-xs fun-fact-hide"
+            aria-label={`Hide ${label}`}
+            title={`Hide ${label}`}
+            onClick={() => hideFunFact(id)}
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="size-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.2A10.7 10.7 0 0112 5c5.2 0 9 4.5 10 7-.4 1.1-1.3 2.5-2.7 3.7M6.2 6.2C3.9 7.7 2.5 10 2 12c1 2.5 4.8 7 10 7 1.4 0 2.7-.3 3.8-.9" />
+            </svg>
+        </button>
+    );
 
     // Then return JSX...
     return (
@@ -151,13 +266,13 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
             </section>
 
-            <div id="general-facts" className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+            <div className="fun-facts-content">
+            <div id="general-facts" style={{ order: funFactsOrder.indexOf("general-facts") }} hidden={hiddenFunFacts.includes("general-facts")} className="card fun-fact-card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                 <div className="card-body p-2">
-                    <h2 
-                        className="card-title text-nowrap ml-3"
-                    >
-                        General Facts
-                    </h2>
+                    <div className="flex items-center justify-between gap-2">
+                        <h2 className="card-title text-nowrap ml-3">General Facts</h2>
+                        {hideFunFactButton("general-facts", "General Facts")}
+                    </div>
                     <table className="table table-zebra">
                         <tbody>
                             <tr>
@@ -184,13 +299,12 @@ export const Home: React.FC<HomeProps> = ({
                     </table>
                 </div>
             </div>          
-            <div id="leaderboards" className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+            <div id="player-leaderboard" style={{ order: funFactsOrder.indexOf("player-leaderboard") }} hidden={hiddenFunFacts.includes("player-leaderboard")} className="card fun-fact-card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                 <div className="card-body p-2">
-                    <h2 
-                        className="card-title text-nowrap ml-3"
-                    >
-                        Player Leaderboard
-                    </h2>
+                    <div className="flex items-center justify-between gap-2">
+                        <h2 className="card-title text-nowrap ml-3">Player Leaderboard</h2>
+                        {hideFunFactButton("player-leaderboard", "Player Leaderboard")}
+                    </div>
                     {highlightChip('player')}
                     {
                         leaderboard.length === 0
@@ -237,13 +351,12 @@ export const Home: React.FC<HomeProps> = ({
                     }
                 </div>
             </div>       
-            <div className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+            <div id="hero-leaderboard" style={{ order: funFactsOrder.indexOf("hero-leaderboard") }} hidden={hiddenFunFacts.includes("hero-leaderboard")} className="card fun-fact-card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                 <div className="card-body p-2">
-                    <h2 
-                        className="card-title text-nowrap ml-3"
-                    >
-                        Hero Leaderboard
-                    </h2>
+                    <div className="flex items-center justify-between gap-2">
+                        <h2 className="card-title text-nowrap ml-3">Hero Leaderboard</h2>
+                        {hideFunFactButton("hero-leaderboard", "Hero Leaderboard")}
+                    </div>
                     {highlightChip('hero')}
                     {
                         heroLeaderboard.length === 0
@@ -290,13 +403,12 @@ export const Home: React.FC<HomeProps> = ({
                     }
                 </div>
             </div>       
-            <div className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+            <div id="player-hero-leaderboard" style={{ order: funFactsOrder.indexOf("player-hero-leaderboard") }} hidden={hiddenFunFacts.includes("player-hero-leaderboard")} className="card fun-fact-card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                 <div className="card-body p-2">
-                    <h2 
-                        className="card-title text-nowrap ml-3"
-                    >
-                        Player + Hero Leaderboard
-                    </h2>
+                    <div className="flex items-center justify-between gap-2">
+                        <h2 className="card-title text-nowrap ml-3">Player + Hero Leaderboard</h2>
+                        {hideFunFactButton("player-hero-leaderboard", "Player + Hero Leaderboard")}
+                    </div>
                     {
                         playerHeroLeaderboard.length === 0
                             ? <p className="ml-3">N/A</p>
@@ -344,11 +456,12 @@ export const Home: React.FC<HomeProps> = ({
                     }
                 </div>
             </div>       
-            <div id="player-hero-matrix" className="card bg-base-100 w-full shadow-lg my-5">
+            <div id="player-hero-matrix" style={{ order: funFactsOrder.indexOf("player-hero-matrix") }} hidden={hiddenFunFacts.includes("player-hero-matrix")} className="card fun-fact-card bg-base-100 w-full shadow-lg my-5">
                 <div className="card-body p-2">
-                    <h2 className="card-title text-nowrap ml-3">
-                        Player × Hero Frequency
-                    </h2>
+                    <div className="flex items-center justify-between gap-2">
+                        <h2 className="card-title text-nowrap ml-3">Player × Hero Frequency</h2>
+                        {hideFunFactButton("player-hero-matrix", "Player × Hero Frequency")}
+                    </div>
                     <span className="badge badge-ghost badge-sm font-normal ml-2">Tap cell for details</span>
                     {playerHeroMatrix.players.length === 0 ? (
                         <p className="ml-3">N/A</p>
@@ -413,11 +526,12 @@ export const Home: React.FC<HomeProps> = ({
             </div>
 
             {winningStreakCards.map(card => (
-                <div key={card.title} id={card.id} className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+                <div key={card.title} id={card.id} style={{ order: funFactsOrder.indexOf(card.id) }} hidden={hiddenFunFacts.includes(card.id)} className="card fun-fact-card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                     <div className="card-body p-2">
-                        <h2 className="card-title text-nowrap ml-3">
-                            {card.title}
-                        </h2>
+                        <div className="flex items-center justify-between gap-2">
+                            <h2 className="card-title text-nowrap ml-3">{card.title}</h2>
+                            {hideFunFactButton(card.id, card.title)}
+                        </div>
                         {card.kind !== 'playerHero' && highlightChip(card.kind)}
                         {card.entries.length === 0 ? (
                             <p className="ml-3">N/A</p>
@@ -506,15 +620,16 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
             ))}
 
-            {[
+            {([
                 { id: "slow-players", title: "Slow Players?", label: "PLAYER", entries: playerAverageDurations },
-                { title: "Slow Heroes?", label: "HERO", entries: heroAverageDurations },
-            ].map(card => (
-                <div key={card.title} id={card.id} className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+                { id: "slow-heroes", title: "Slow Heroes?", label: "HERO", entries: heroAverageDurations },
+            ] as const).map(card => (
+                <div key={card.title} id={card.id} style={{ order: funFactsOrder.indexOf(card.id) }} hidden={hiddenFunFacts.includes(card.id)} className="card fun-fact-card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                     <div className="card-body p-2">
-                        <h2 className="card-title text-nowrap ml-3">
-                            {card.title}
-                        </h2>
+                        <div className="flex items-center justify-between gap-2">
+                            <h2 className="card-title text-nowrap ml-3">{card.title}</h2>
+                            {hideFunFactButton(card.id, card.title)}
+                        </div>
                         {card.entries.length === 0 ? (
                             <p className="ml-3">N/A</p>
                         ) : (
@@ -544,14 +659,15 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
             ))}
 
-            <div id="all-games" className="card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
+            <div id="all-games" style={{ order: funFactsOrder.indexOf("all-games") }} hidden={hiddenFunFacts.includes("all-games")} className="card fun-fact-card bg-base-100 w-full shadow-lg my-5 overflow-x-scroll">
                 <div className="card-body p-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-2">
                         <h2
                             className="card-title text-nowrap ml-3"
                         >
                             All Games
                         </h2>
+                        {hideFunFactButton("all-games", "All Games")}
                     </div>
                     {
                         allGames.length === 0
@@ -643,6 +759,7 @@ export const Home: React.FC<HomeProps> = ({
                             )
                     }
                 </div>
+            </div>
             </div>
 
             <dialog ref={heatmapModalRef} className="modal">
@@ -775,20 +892,66 @@ export const Home: React.FC<HomeProps> = ({
                     className="fun-facts-nav-menu"
                     hidden={!funFactsNavOpen}
                 >
-                    <div className="fun-facts-nav-heading">Jump to fun facts</div>
-                    {funFactsSections.map((section, index) => (
-                        <button
-                            key={section.id}
-                            type="button"
-                            className="btn btn-sm fun-facts-nav-item"
-                            onClick={() => scrollToFunFactsSection(section.id)}
-                        >
-                            <span className="badge badge-sm fun-facts-nav-number">
-                                {index + 1}
-                            </span>
-                            {section.label}
-                        </button>
+                    <div className="fun-facts-nav-heading">Fun facts</div>
+                    {visibleFunFacts.map((fact, index) => (
+                        <div key={fact.id} className="fun-facts-nav-row">
+                            <button
+                                type="button"
+                                className="btn btn-sm fun-facts-nav-item"
+                                onClick={() => scrollToFunFactsSection(fact.id)}
+                            >
+                                <span className="badge badge-sm fun-facts-nav-number">{index + 1}</span>
+                                {fact.label}
+                            </button>
+                            <div className="fun-facts-nav-reorder">
+                                <button
+                                    type="button"
+                                    className="btn btn-ghost btn-xs"
+                                    aria-label={`Move ${fact.label} up`}
+                                    title="Move up"
+                                    disabled={index === 0}
+                                    onClick={() => moveFunFact(fact.id, -1)}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="m5 15 7-7 7 7" />
+                                    </svg>
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-ghost btn-xs"
+                                    aria-label={`Move ${fact.label} down`}
+                                    title="Move down"
+                                    disabled={index === visibleFunFacts.length - 1}
+                                    onClick={() => moveFunFact(fact.id, 1)}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
                     ))}
+                    {hiddenFunFactItems.length > 0 && (
+                        <>
+                            <div className="fun-facts-nav-heading fun-facts-hidden-heading">Hidden · tap eye to show</div>
+                            {hiddenFunFactItems.map(fact => (
+                                <button
+                                    key={fact.id}
+                                    type="button"
+                                    className="btn btn-sm fun-facts-nav-item fun-facts-hidden-item"
+                                    aria-label={`Show ${fact.label}`}
+                                    title={`Show ${fact.label}`}
+                                    onClick={() => showFunFact(fact.id)}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="size-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 12s3.4-7 9.5-7 9.5 7 9.5 7-3.4 7-9.5 7-9.5-7-9.5-7Z" />
+                                        <circle cx="12" cy="12" r="2.5" />
+                                    </svg>
+                                    {fact.label}
+                                </button>
+                            ))}
+                        </>
+                    )}
                 </div>
                 <button
                     type="button"
