@@ -525,7 +525,7 @@ export const Setup: React.FC<SetupProps> = ({
                             Add
                         </button>
                     </div>
-                    <details className="group card bg-base-100 shadow mb-4">
+                    <details open className="group card bg-base-100 shadow mb-4">
                         <summary className="cursor-pointer select-none p-3 font-bold list-none flex items-center justify-between [&::-webkit-details-marker]:hidden">
                             <span>Spin for a Hero ↻</span>
                             <span className="text-base-content/60 text-xl leading-none">
