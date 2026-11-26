@@ -876,7 +876,9 @@ export const Home: React.FC<HomeProps> = ({
                                         {selectedStreak.breaker.winner.name} ({selectedStreak.breaker.winner.hero})
                                     </p>
                                     <p className="text-sm opacity-70">
-                                        Ended this run on{' '}
+                                        Beat {selectedStreak.breaker.loser
+                                            ? `${selectedStreak.breaker.loser.name} (${selectedStreak.breaker.loser.hero})`
+                                            : "Unknown"} on{' '}
                                         {new Date(selectedStreak.breaker.date).toLocaleDateString()}
                                     </p>
                                 </div>
